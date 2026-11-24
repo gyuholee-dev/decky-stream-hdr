@@ -184,3 +184,6 @@ cli/
 
 # Native build output
 *.so
+
+# Release output
+release/
