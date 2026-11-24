@@ -118,9 +118,11 @@ class ControllerTests(WrapperTestCase):
     def test_uninstall_cleans_up(self):
         controller = self.make()
         controller.set_hdr_enabled(True)
+        controller.set_saturation(150)
         controller.uninstall()
         self.assertFalse(os.path.exists(self.paths.shim))
         self.assertFalse(os.path.exists(self.paths.flag))
+        self.assertFalse(os.path.exists(self.paths.data_dir))
 
 
 class SaturationTests(WrapperTestCase):

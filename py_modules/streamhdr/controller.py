@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
 from typing import Any, Dict, Optional
 
 from . import gamescope, saturation, wrapper
@@ -47,6 +48,11 @@ class Controller:
         self._remove_look()
         try:
             wrapper.uninstall(self.paths)
+            shutil.rmtree(self.paths.luts_dir, ignore_errors=True)
+            try:
+                os.rmdir(self.paths.data_dir)  # only removes the folder when nothing else is in it
+            except OSError:
+                pass
             self.log.info("Removed all plugin files")
         except OSError as exc:
             self.log.error("Cleanup failed: %s", exc)
