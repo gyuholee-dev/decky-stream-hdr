@@ -1,9 +1,9 @@
 import { PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
 import { definePlugin } from "@decky/api";
 import { useEffect, useState } from "react";
-import { FaTv } from "react-icons/fa";
 
 import { getStatus, setHdrEnabled, setSaturation, Status } from "./api";
+import { StreamIcon } from "./icon";
 import { strings } from "./strings";
 
 const SATURATION_MIN = 0;
@@ -87,7 +87,7 @@ export default definePlugin(() => {
     name: strings.pluginName,
     titleView: <div>{strings.pluginName}</div>,
     content: <Content />,
-    icon: <FaTv />,
+    icon: <StreamIcon />,
     onDismount() {},
   };
 });

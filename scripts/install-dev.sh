@@ -1,15 +1,29 @@
 #!/bin/sh
-# Builds the injection library on this machine and installs the plugin into Decky Loader.
-# Run it on the Linux client from a copy of this repository that already contains dist/
-# (build the frontend on your development machine with 'pnpm run build' and copy the repo over).
+# Builds everything on this machine and installs the plugin into Decky Loader.
+# Run it on the Linux client from a clone of this repository:
 #
-#   scripts/install-dev.sh [plugins-dir]     default plugins dir: ~/homebrew/plugins
+#   git pull && sh scripts/install-dev.sh [plugins-dir]     default plugins dir: ~/homebrew/plugins
+#
+# Needs: git, node, yarn, gcc, make, python3 and sudo.
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 plugins_dir=${1:-"$HOME/homebrew/plugins"}
 
+for tool in node yarn gcc make python3 sudo; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "'$tool' is not installed. Install it first (on CachyOS: sudo pacman -S nodejs yarn gcc make python)." >&2
+        exit 1
+    fi
+done
+
+echo "Building the frontend"
+(cd "$root" && yarn install --frozen-lockfile && yarn build)
+
+echo "Building the injection library"
 make -C "$root/backend"
+
+echo "Packaging"
 sh "$root/scripts/package.sh"
 
 echo "Installing into $plugins_dir/decky-stream-hdr (sudo may ask for your password)"

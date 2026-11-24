@@ -1,0 +1,108 @@
+import { useState } from "react";
+import { createRoot } from "react-dom/client";
+
+import plugin from "../src/index";
+import { knobs, patchState } from "./backend";
+import "./preview.css";
+
+// Type-level note: the preview renders the same `content` element the plugin hands to Decky.
+function Preview() {
+  // Changing a knob remounts the panel so that it fetches the new state, like reopening it.
+  const [remountKey, setRemountKey] = useState(0);
+  const [unreachable, setUnreachable] = useState(knobs.unreachable);
+  const [streaming, setStreaming] = useState(false);
+  const [error, setError] = useState("");
+  const [saturationError, setSaturationError] = useState("");
+  const [latency, setLatency] = useState(knobs.latencyMs);
+
+  const remount = () => setRemountKey((key) => key + 1);
+
+  return (
+    <div className="page">
+      <div className="qam">
+        <div className="qam-title">
+          {plugin.titleView}
+          <span className="qam-icon" title="Icon in the Decky plugin list">{plugin.icon}</span>
+        </div>
+        <div key={remountKey}>{plugin.content}</div>
+      </div>
+
+      <aside className="dev">
+        <h2>Preview controls</h2>
+        <p className="note">
+          These controls only exist in the browser preview. They change what the stand-in backend
+          replies, so every panel state can be styled without a device.
+        </p>
+        <label>
+          <input
+            type="checkbox"
+            checked={unreachable}
+            onChange={(event) => {
+              knobs.unreachable = event.target.checked;
+              setUnreachable(event.target.checked);
+              remount();
+            }}
+          />
+          Backend unreachable
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={streaming}
+            onChange={(event) => {
+              patchState({ streaming: event.target.checked });
+              setStreaming(event.target.checked);
+              remount();
+            }}
+          />
+          Streaming now
+        </label>
+        <label>
+          HDR problem text
+          <input
+            type="text"
+            value={error}
+            placeholder="empty = no problem"
+            onChange={(event) => {
+              patchState({ error: event.target.value || null });
+              setError(event.target.value);
+              remount();
+            }}
+          />
+        </label>
+        <label>
+          Saturation problem text
+          <input
+            type="text"
+            value={saturationError}
+            placeholder="empty = no problem"
+            onChange={(event) => {
+              patchState({ saturation_error: event.target.value || null });
+              setSaturationError(event.target.value);
+              remount();
+            }}
+          />
+        </label>
+        <label>
+          Backend latency: {latency} ms
+          <input
+            type="range"
+            min={0}
+            max={2000}
+            step={50}
+            value={latency}
+            onChange={(event) => {
+              knobs.latencyMs = Number(event.target.value);
+              setLatency(Number(event.target.value));
+            }}
+          />
+        </label>
+        <button type="button" onClick={remount}>
+          Reopen panel
+        </button>
+      </aside>
+    </div>
+  );
+}
+
+createRoot(document.getElementById("root")!).render(<Preview />);

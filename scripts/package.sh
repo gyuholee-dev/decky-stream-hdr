@@ -1,7 +1,7 @@
 #!/bin/sh
 # Assembles the plugin release zip: release/decky-stream-hdr-<version>.zip
 #
-#   scripts/package.sh            needs dist/ (pnpm run build) and backend/out/sdl_hdr_shim.so (make -C backend)
+#   scripts/package.sh            needs dist/ (yarn build) and backend/out/sdl_hdr_shim.so (make -C backend)
 #   scripts/package.sh --no-shim  skips the injection library, only useful to check the zip layout
 #
 # The staged plugin folder is left in release/stage/decky-stream-hdr for scripts/install-dev.sh.
@@ -16,7 +16,7 @@ no_shim=0
 version=$(sed -n 's/^ *"version": *"\([^"]*\)".*/\1/p' package.json | head -1)
 
 if [ ! -f dist/index.js ]; then
-    echo "dist/index.js is missing. Run 'pnpm run build' first." >&2
+    echo "dist/index.js is missing. Run 'yarn build' first." >&2
     exit 1
 fi
 if [ "$no_shim" = 0 ] && [ ! -f backend/out/sdl_hdr_shim.so ]; then

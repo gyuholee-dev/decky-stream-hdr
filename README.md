@@ -41,31 +41,35 @@ On the client, turning on Steam's developer option "HDR compatibility test" make
 
 ## Install
 
-Download the release zip and extract it to `~/homebrew/plugins/` (so that `~/homebrew/plugins/decky-stream-hdr/plugin.json` exists), then restart Decky Loader:
+On the Linux client, clone the repository, then build and install in one step. The script builds the frontend and the injection library, packages the plugin into `~/homebrew/plugins/decky-stream-hdr` and restarts Decky Loader. It needs git, node, yarn, gcc, make, python3 and sudo (on CachyOS: `sudo pacman -S git nodejs yarn gcc make python`).
 
 ```bash
-sudo systemctl restart plugin_loader
+git clone <repository url> ~/decky-stream-hdr
+cd ~/decky-stream-hdr
+sh scripts/install-dev.sh
 ```
 
-## Build
+To update later, run `git pull` and `sh scripts/install-dev.sh` again.
 
-Requires Node.js, pnpm v9, Python 3 and a C compiler on Linux.
+A release zip (`scripts/package.sh`) contains `dist/`, `main.py`, `plugin.json`, `package.json`, `py_modules/`, `LICENSE`, `README.md` and `bin/sdl_hdr_shim.so`. It can be extracted into `~/homebrew/plugins/` instead.
+
+## Develop
+
+Development happens on any machine; building and installing happens on the client. The panel can be previewed in a desktop browser, with the Steam and Decky UI components and the plugin backend replaced by stand-ins:
 
 ```bash
-pnpm i
-pnpm run build
-make -C backend      # builds backend/out/sdl_hdr_shim.so
+yarn install
+yarn serve       # dev server; add the browser with `yarn start`
 ```
 
-The release zip contains `dist/`, `main.py`, `plugin.json`, `package.json`, `py_modules/`, `LICENSE`, `README.md` and `bin/sdl_hdr_shim.so`. `scripts/package.sh` assembles it.
-
-## Test
+Then open http://localhost:5173/. The preview controls next to the panel switch the stand-in backend into other states (backend unreachable, a problem text, streaming). The stand-ins only approximate Steam's quick access menu, so check the final look on the device.
 
 ```bash
-pnpm test
+yarn test            # backend unit tests, only Python 3 is needed
+yarn typecheck       # TypeScript type check
 ```
 
-The unit tests need only Python 3 and run on any OS.
+Build steps by hand (Linux): `yarn build`, `make -C backend`, then `scripts/package.sh`.
 
 ## Limitations
 

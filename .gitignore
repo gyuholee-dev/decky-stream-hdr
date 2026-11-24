@@ -1,6 +1,5 @@
-# package
+# package (yarn.lock is committed)
 package-lock.json
-yarn.lock
 
 # Logs
 logs

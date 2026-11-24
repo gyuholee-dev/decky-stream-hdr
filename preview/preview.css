@@ -1,0 +1,199 @@
+:root {
+  color-scheme: dark;
+  --page: #0b0e12;
+  --panel: #1c2027;
+  --panel-title: #23272f;
+  --text: #dcdedf;
+  --muted: #8b929a;
+  --accent: #1a9fff;
+  --track: #3d4450;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+  font-family: "Motiva Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+.page {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px;
+  flex-wrap: wrap;
+}
+
+/* Steam's quick access menu is a narrow column on the side of the screen. */
+.qam {
+  width: 310px;
+  min-height: 560px;
+  background: var(--panel);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.qam-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--panel-title);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ps {
+  padding: 8px 0;
+}
+
+.ps-title {
+  padding: 8px 16px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.psr {
+  padding: 4px 16px;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+}
+
+.field-label {
+  font-size: 14px;
+}
+
+.field-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.toggle {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: var(--track);
+  cursor: pointer;
+}
+
+.toggle.on {
+  background: var(--accent);
+}
+
+.toggle .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 120ms;
+}
+
+.toggle.on .knob {
+  transform: translateX(22px);
+}
+
+.slider-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.slider {
+  width: 100%;
+  margin: 6px 0 0;
+  accent-color: var(--accent);
+}
+
+.slider-reset {
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dev {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px dashed var(--track);
+  border-radius: 4px;
+}
+
+.dev h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.dev .note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.dev label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.dev label:has(input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.dev input[type="text"] {
+  padding: 6px 8px;
+  border: 1px solid var(--track);
+  border-radius: 3px;
+  background: var(--page);
+  color: var(--text);
+  font: inherit;
+}
+
+.dev button {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border: 1px solid var(--track);
+  border-radius: 3px;
+  background: var(--panel-title);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.qam-icon {
+  font-size: 24px;
+  color: var(--muted);
+}
