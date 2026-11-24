@@ -10,6 +10,20 @@ SHIM_NAME = "sdl_hdr_shim.so"
 FLAG_NAME = "enabled"
 TEMPLATE_NAME = "streaming_client.sh.tmpl"
 
+# Where Steam keeps its files, in the order they are tried. The first is the usual place (SteamOS and
+# most distributions); the others are links or older locations that point at the same folder.
+STEAM_ROOT_CANDIDATES = (
+    os.path.join(".local", "share", "Steam"),
+    os.path.join(".steam", "steam"),
+    os.path.join(".steam", "root"),
+)
+
+
+def find_streaming_client(home: str) -> str:
+    """Path of Steam's streaming client: the first place it exists, else the usual place."""
+    paths = [os.path.join(home, root, "steamrt64", "streaming_client") for root in STEAM_ROOT_CANDIDATES]
+    return next((path for path in paths if os.path.isfile(path)), paths[0])
+
 
 @dataclass(frozen=True)
 class Paths:
@@ -30,7 +44,7 @@ class Paths:
 
     @staticmethod
     def for_user(home: str, plugin_dir: str, uid: Optional[int] = None) -> "Paths":
-        client = os.path.join(home, ".local", "share", "Steam", "steamrt64", "streaming_client")
+        client = find_streaming_client(home)
         data_dir = os.path.join(home, ".local", "share", DATA_DIR_NAME)
         uid = os.getuid() if uid is None else uid
         return Paths(

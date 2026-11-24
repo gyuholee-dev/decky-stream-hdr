@@ -10,6 +10,9 @@ from .errors import CodedError
 
 ATOM = "GAMESCOPE_COLOR_LOOK_PQ"
 ENVIRONMENT_FILE = "gamescope-environment"
+# When nothing tells us where gamescope's X server is, use the display that gamescope sessions
+# normally give it (other plugins that talk to gamescope rely on the same value).
+FALLBACK_DISPLAY = ":1"
 
 
 class GamescopeError(CodedError):
@@ -50,12 +53,26 @@ def read_environment(path: str) -> Dict[str, str]:
     return env
 
 
+def resolve_environment(path: str) -> "tuple[Dict[str, str], bool]":
+    """Variables for reaching gamescope's X server, and whether they are only a best guess.
+
+    The environment file that gamescope sessions write is preferred. Not every setup has it, so
+    otherwise the DISPLAY we already have is used, and as a last resort the usual display.
+    """
+    try:
+        return read_environment(path), False
+    except GamescopeError:
+        return {"DISPLAY": os.environ.get("DISPLAY") or FALLBACK_DISPLAY}, True
+
+
 Runner = Callable[..., "subprocess.CompletedProcess[str]"]
 
 
 def _run_xprop(args: list, env_file: str, run: Runner) -> str:
+    variables, guessed = resolve_environment(env_file)
     env = dict(os.environ)
-    env.update(read_environment(env_file))
+    env.update(variables)
+    env["LC_ALL"] = "C"  # xprop's output is parsed, so it must not be translated
     try:
         result = run(["xprop", "-root"] + args, env=env, capture_output=True, text=True, timeout=10)
     except FileNotFoundError:
@@ -64,6 +81,9 @@ def _run_xprop(args: list, env_file: str, run: Runner) -> str:
         raise GamescopeError("xprop_timeout", "xprop timed out while talking to gamescope.")
     if result.returncode != 0:
         detail = (result.stderr or "").strip()
+        if guessed:
+            # We could not find gamescope's display and the guess did not work either.
+            raise GamescopeError("env_missing", "Could not reach gamescope's display (%s): %s" % (variables["DISPLAY"], detail), detail or None)
         raise GamescopeError("xprop_failed", "xprop failed: %s" % detail, detail or None)
     return result.stdout or ""
 

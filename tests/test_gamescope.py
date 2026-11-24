@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+import unittest.mock
 
 from streamhdr import gamescope
 
@@ -67,15 +68,32 @@ class XpropTests(unittest.TestCase):
             return subprocess.CompletedProcess(args, 0, stdout, "")
         return run
 
-    def test_missing_environment_file(self):
-        with self.assertRaises(gamescope.GamescopeError):
-            gamescope.set_look("/x", os.path.join(self.tmp, "none"), self.runner())
+    def test_missing_environment_file_falls_back_to_the_current_display(self):
+        with unittest.mock.patch.dict(os.environ, {"DISPLAY": ":7"}):
+            gamescope.clear_look(os.path.join(self.tmp, "none"), self.runner())
+        self.assertEqual(self.calls[0][1]["env"]["DISPLAY"], ":7")
 
-    def test_environment_without_display(self):
+    def test_without_any_display_the_usual_one_is_used(self):
+        env = {key: value for key, value in os.environ.items() if key != "DISPLAY"}
+        with unittest.mock.patch.dict(os.environ, env, clear=True):
+            gamescope.clear_look(os.path.join(self.tmp, "none"), self.runner())
+        self.assertEqual(self.calls[0][1]["env"]["DISPLAY"], gamescope.FALLBACK_DISPLAY)
+
+    def test_environment_without_display_entry_also_falls_back(self):
         with open(self.env_file, "w") as handle:
             handle.write("FOO=bar\n")
-        with self.assertRaises(gamescope.GamescopeError):
+        with unittest.mock.patch.dict(os.environ, {"DISPLAY": ":3"}):
             gamescope.clear_look(self.env_file, self.runner())
+        self.assertEqual(self.calls[0][1]["env"]["DISPLAY"], ":3")
+
+    def test_failure_with_a_guessed_display_reports_it_cannot_reach_gamescope(self):
+        with self.assertRaises(gamescope.GamescopeError) as raised:
+            gamescope.clear_look(os.path.join(self.tmp, "none"), self.runner(returncode=1))
+        self.assertEqual(raised.exception.code, "env_missing")
+
+    def test_output_is_not_translated(self):
+        gamescope.clear_look(self.env_file, self.runner())
+        self.assertEqual(self.calls[0][1]["env"]["LC_ALL"], "C")
 
     def test_missing_xprop_tool(self):
         with self.assertRaises(gamescope.GamescopeError) as raised:

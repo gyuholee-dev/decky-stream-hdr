@@ -37,11 +37,11 @@ On the client, turning on Steam's developer option "HDR compatibility test" make
 
 - A Linux client running Steam in gamescope game mode with Decky Loader installed.
 - gamescope HDR support on the display (for example `hdr.supported = true` in the display's gamescope script).
-- `xprop` for the saturation slider.
+- `xprop` for the saturation slider. On Arch-based systems it comes with the desktop environment (it is a dependency of `at-spi2-core`); a game-mode-only install may lack it, in which case the panel says so and only the saturation slider is affected.
 
 ## Install
 
-On the Linux client, clone the repository, then build and install in one step. The script builds the frontend and the injection library, packages the plugin into `~/homebrew/plugins/decky-stream-hdr` and restarts Decky Loader. It needs git, node, yarn, gcc, make, python3 and sudo (on CachyOS: `sudo pacman -S git nodejs yarn gcc make python`).
+On the Linux client, clone the repository, then build and install in one step. The script builds the frontend and the injection library, packages the plugin into `~/homebrew/plugins/decky-stream-hdr` and restarts Decky Loader. It needs git, node, yarn, a C compiler (gcc or cc), python3 and sudo; make is optional (on CachyOS: `sudo pacman -S git nodejs yarn gcc python`). If Decky Loader's plugins folder is not `~/homebrew/plugins`, pass it as an argument: `sh scripts/install-dev.sh <plugins folder>`.
 
 ```bash
 git clone <repository url> ~/decky-stream-hdr
@@ -87,6 +87,16 @@ yarn typecheck       # TypeScript type check
 ```
 
 Build steps by hand (Linux): `yarn build`, `make -C backend`, then `scripts/package.sh`.
+
+## Other systems
+
+The plugin avoids assumptions that only hold on one setup:
+
+- **Paths:** the user's home folder comes from Decky, not from a fixed `deck` user. Steam's streaming client is looked up in `~/.local/share/Steam`, then `~/.steam/steam` and `~/.steam/root`.
+- **gamescope's display:** read from `$XDG_RUNTIME_DIR/gamescope-environment` when it exists. Otherwise the `DISPLAY` that is already set is used, and as a last resort `:1`. If that does not work either, the panel says gamescope could not be reached.
+- **Language:** `xprop` runs with `LC_ALL=C`, so its output is not translated before it is read.
+- **Shell:** nothing depends on the login shell; the scripts run with `sh`.
+- **Not supported:** the Flatpak version of Steam, whose sandbox cannot see the files the plugin keeps in your home folder.
 
 ## Panel footer and info page
 
