@@ -175,3 +175,12 @@ build/
 
 # Electron sample output
 examples/electron-sample/out/
+
+# Decky plugin tooling
+decky_plugin.py
+cli/
+.vscode/settings.json
+.pnpm-store
+
+# Native build output
+*.so

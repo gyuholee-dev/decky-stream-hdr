@@ -1,0 +1,10 @@
+{
+  "name": "StreamHDR",
+  "author": "GyuhoLee",
+  "flags": [],
+  "api_version": 1,
+  "publish": {
+    "tags": ["streaming", "hdr", "display"],
+    "description": "Enables real HDR for Steam Remote Play on Linux clients."
+  }
+}
