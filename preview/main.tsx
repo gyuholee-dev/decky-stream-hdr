@@ -29,10 +29,7 @@ function Preview() {
   return (
     <div className="page">
       <div className={cx("qam", real && "real", real && "BasicUI")}>
-        <div className="qam-title">
-          {plugin.titleView}
-          <span className="qam-icon" title="Icon in the Decky plugin list">{plugin.icon}</span>
-        </div>
+        <div className="qam-title">{plugin.titleView}</div>
         <div key={remountKey}>{plugin.content}</div>
       </div>
 
@@ -51,6 +48,9 @@ function Preview() {
       )}
 
       <aside className="dev">
+        <div className="note">
+          Icon in the Decky plugin list: <span className="qam-icon">{plugin.icon}</span>
+        </div>
         <h2>Preview controls</h2>
         <p className="note">
           These controls only exist in the browser preview. They change what the stand-in backend

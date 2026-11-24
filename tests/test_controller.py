@@ -136,7 +136,7 @@ class SaturationTests(WrapperTestCase):
 
     def test_value_is_snapped_stored_and_lut_prepared(self):
         controller = self.make()
-        status = controller.set_saturation(147)
+        status = controller.set_saturation(148)
         self.assertEqual(status["saturation"], 150)
         self.assertTrue(os.path.isfile(self.lut(150)))
         self.assertEqual(Settings(os.path.join(self.tmp, "settings", "settings.json")).get("saturation"), 150)
@@ -157,10 +157,10 @@ class SaturationTests(WrapperTestCase):
     def test_changing_value_during_stream_applies_immediately(self):
         controller = self.make()
         controller.on_streaming_changed(True)
-        controller.set_saturation(130)
-        self.assertEqual(self.gs.look, self.lut(130))
-        controller.set_saturation(170)
-        self.assertEqual(self.gs.look, self.lut(170))
+        controller.set_saturation(135)
+        self.assertEqual(self.gs.look, self.lut(135))
+        controller.set_saturation(175)
+        self.assertEqual(self.gs.look, self.lut(175))
 
     def test_default_value_clears_the_atom(self):
         controller = self.make()
@@ -204,6 +204,37 @@ class SaturationTests(WrapperTestCase):
         controller = self.make()
         self.gs.fail = True
         controller.start()
+
+
+class HdrActiveTests(WrapperTestCase):
+    def make(self):
+        settings = Settings(os.path.join(self.tmp, "settings", "settings.json"))
+        return Controller(self.paths, settings, gamescope_api=FakeGamescope())
+
+    def test_not_active_without_a_stream(self):
+        controller = self.make()
+        self.assertFalse(controller.set_hdr_enabled(True)["hdr_active"])
+
+    def test_active_while_streaming_with_hdr_on(self):
+        controller = self.make()
+        controller.set_hdr_enabled(True)
+        controller.on_streaming_changed(True)
+        self.assertTrue(controller.status()["hdr_active"])
+        controller.on_streaming_changed(False)
+        self.assertFalse(controller.status()["hdr_active"])
+
+    def test_not_active_while_streaming_with_hdr_off(self):
+        controller = self.make()
+        controller.on_streaming_changed(True)
+        self.assertFalse(controller.status()["hdr_active"])
+        self.assertTrue(controller.status()["streaming"])
+
+    def test_not_active_when_the_wrapper_could_not_be_installed(self):
+        os.remove(self.paths.client)
+        controller = self.make()
+        controller.set_hdr_enabled(True)
+        controller.on_streaming_changed(True)
+        self.assertFalse(controller.status()["hdr_active"])
 
 
 class MaintainTests(WrapperTestCase):

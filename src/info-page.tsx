@@ -1,7 +1,7 @@
 import {
-  ButtonItem,
   DialogBody,
   DialogBodyText,
+  DialogButton,
   DialogControlsSection,
   DialogControlsSectionHeader,
   Focusable,
@@ -10,6 +10,7 @@ import {
 
 import { RepositoryIcon } from "./icon";
 import { pluginInfo } from "./info";
+import { ScrollWindow } from "./scroll-window";
 import { strings } from "./strings";
 
 // Route of the info page. It is registered in index.tsx and opened by the "Plugin Info" button.
@@ -39,36 +40,49 @@ function Bullets({ items }: { items: string[] }) {
 export function InfoPage() {
   const info = strings.info;
   return (
-    // The top margin keeps the content below Steam's status bar; the back button returns to the previous screen.
-    <Focusable onCancel={() => Navigation.NavigateBack()} style={{ marginTop: "40px", height: "calc(100% - 40px)", overflowY: "auto" }}>
-      <DialogBody>
-        <DialogControlsSection>
-          <DialogControlsSectionHeader>{strings.pluginName}</DialogControlsSectionHeader>
-          <DialogBodyText>{info.about}</DialogBodyText>
-        </DialogControlsSection>
-        <DialogControlsSection>
-          <DialogControlsSectionHeader>{info.usageHeading}</DialogControlsSectionHeader>
-          <Bullets items={info.usage} />
-        </DialogControlsSection>
-        <OptionalSection heading={info.requirementsHeading} items={info.requirements} />
-        <DialogControlsSection>
-          <DialogControlsSectionHeader>{info.hostHeading}</DialogControlsSectionHeader>
-          <Bullets items={info.host} />
-        </DialogControlsSection>
-        <OptionalSection heading={info.clientHeading} items={info.client} />
-        <DialogControlsSection>
-          <DialogControlsSectionHeader>{info.detailsHeading}</DialogControlsSectionHeader>
-          <DialogBodyText>{`${info.version}: ${pluginInfo.version}`}</DialogBodyText>
-          <DialogBodyText>{`${info.author}: ${pluginInfo.author}`}</DialogBodyText>
-          <DialogBodyText>{`${info.license}: ${pluginInfo.license}`}</DialogBodyText>
-          <ButtonItem layout="below" onClick={() => Navigation.NavigateToExternalWeb(pluginInfo.repositoryUrl)}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
-              <RepositoryIcon />
-              {strings.githubButton}
-            </span>
-          </ButtonItem>
-        </DialogControlsSection>
-      </DialogBody>
-    </Focusable>
+    // The back button returns to the previous screen. The window scrolls with the stick or d-pad.
+    <ScrollWindow onCancel={() => Navigation.NavigateBack()}>
+      <div
+        style={{
+          padding: "0 30px 24px",
+          // Break between words, not inside them; only text that cannot break otherwise wraps anywhere.
+          wordBreak: "keep-all",
+          overflowWrap: "anywhere",
+        }}
+      >
+        <DialogBody>
+          <DialogControlsSection>
+            <DialogControlsSectionHeader>{strings.pluginName}</DialogControlsSectionHeader>
+            <DialogBodyText>{info.about}</DialogBodyText>
+          </DialogControlsSection>
+          <DialogControlsSection>
+            <DialogControlsSectionHeader>{info.usageHeading}</DialogControlsSectionHeader>
+            <Bullets items={info.usage} />
+          </DialogControlsSection>
+          <OptionalSection heading={info.requirementsHeading} items={info.requirements} />
+          <DialogControlsSection>
+            <DialogControlsSectionHeader>{info.hostHeading}</DialogControlsSectionHeader>
+            <Bullets items={info.host} />
+          </DialogControlsSection>
+          <OptionalSection heading={info.clientHeading} items={info.client} />
+          <DialogControlsSection>
+            <DialogControlsSectionHeader>{info.detailsHeading}</DialogControlsSectionHeader>
+            <DialogBodyText>{`${info.version}: ${pluginInfo.version}`}</DialogBodyText>
+            <DialogBodyText>{`${info.author}: ${pluginInfo.author}`}</DialogBodyText>
+            <DialogBodyText>{`${info.license}: ${pluginInfo.license}`}</DialogBodyText>
+            {/* A small button at the right edge, like the repository links of other plugins. */}
+            <Focusable style={{ display: "flex", justifyContent: "flex-end" }}>
+              <DialogButton
+                onClick={() => Navigation.NavigateToExternalWeb(pluginInfo.repositoryUrl)}
+                style={{ width: "auto", minWidth: "auto", padding: "0 16px", minHeight: "30px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "8px" }}
+              >
+                <RepositoryIcon />
+                {strings.githubButton}
+              </DialogButton>
+            </Focusable>
+          </DialogControlsSection>
+        </DialogBody>
+      </div>
+    </ScrollWindow>
   );
 }

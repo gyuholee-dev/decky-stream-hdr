@@ -69,8 +69,10 @@ class LutTests(unittest.TestCase):
 class PercentTests(unittest.TestCase):
     def test_clamp_snaps_and_limits(self):
         self.assertEqual(saturation.clamp_percent(100), 100)
-        self.assertEqual(saturation.clamp_percent(104), 100)
-        self.assertEqual(saturation.clamp_percent(106), 110)
+        self.assertEqual(saturation.clamp_percent(102), 100)
+        self.assertEqual(saturation.clamp_percent(103), 105)
+        self.assertEqual(saturation.clamp_percent(108), 110)
+        self.assertEqual(saturation.clamp_percent(145), 145)
         self.assertEqual(saturation.clamp_percent(-50), 0)
         self.assertEqual(saturation.clamp_percent(999), 200)
 

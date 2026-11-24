@@ -3,6 +3,7 @@
 
 export interface PreviewStatus {
   hdr_enabled: boolean;
+  hdr_active: boolean;
   saturation: number;
   streaming: boolean;
   wrapper: {
@@ -23,6 +24,7 @@ export const knobs = {
 
 const state: PreviewStatus = {
   hdr_enabled: false,
+  hdr_active: false,
   saturation: 100,
   streaming: false,
   wrapper: {
@@ -43,7 +45,7 @@ export function patchState(patch: Partial<PreviewStatus>) {
 const snapPercent = (value: number) => Math.max(0, Math.min(200, Math.round(value / 10) * 10));
 
 const handlers: Record<string, (...args: any[]) => PreviewStatus> = {
-  get_status: () => ({ ...state, wrapper: { ...state.wrapper } }),
+  get_status: () => ({ ...state, hdr_active: state.streaming && state.hdr_enabled, wrapper: { ...state.wrapper } }),
   set_hdr_enabled: (enabled: boolean) => {
     state.hdr_enabled = enabled;
     state.wrapper = {

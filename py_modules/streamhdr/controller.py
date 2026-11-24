@@ -171,11 +171,24 @@ class Controller:
     # -- status ----------------------------------------------------------
 
     def status(self) -> Dict[str, Any]:
+        wrapper_state = wrapper.status(self.paths)
+        hdr_enabled = bool(self.settings.get("hdr_enabled"))
+        # HDR is being requested right now: a stream is running and everything needed for the
+        # request is in place. (The host can still decide to send SDR, for example because of its settings.)
+        hdr_active = (
+            self.streaming
+            and hdr_enabled
+            and self.error is None
+            and wrapper_state["wrapped"]
+            and wrapper_state["enabled"]
+            and wrapper_state["shim_installed"]
+        )
         return {
-            "hdr_enabled": bool(self.settings.get("hdr_enabled")),
+            "hdr_enabled": hdr_enabled,
+            "hdr_active": hdr_active,
             "saturation": self.settings.get("saturation"),
             "streaming": self.streaming,
-            "wrapper": wrapper.status(self.paths),
+            "wrapper": wrapper_state,
             "error": self.error,
             "saturation_error": self.saturation_error,
         }

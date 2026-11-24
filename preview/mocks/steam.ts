@@ -14,6 +14,7 @@ export const dialog = lookup("gamepadDialogClasses");
 export const slider = lookup("gamepadSliderClasses");
 export const controls = lookup("quickAccessControlsClasses");
 export const menu = lookup("quickAccessMenuClasses");
+export const scrollClass = lookup("scrollPanelClasses");
 
 export const cx = (...names: Array<string | false | undefined>) => names.filter(Boolean).join(" ");
 

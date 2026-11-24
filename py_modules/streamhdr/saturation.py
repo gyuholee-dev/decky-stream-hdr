@@ -13,7 +13,7 @@ LUT_SIZE = 17  # gamescope's internal 3D LUT size
 
 SATURATION_MIN = 0
 SATURATION_MAX = 200
-SATURATION_STEP = 10
+SATURATION_STEP = 5
 SATURATION_DEFAULT = 100  # percent; 100 means "no change"
 
 PQ_M1 = 2610 / 16384

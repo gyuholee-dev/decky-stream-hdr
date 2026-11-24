@@ -8,7 +8,7 @@ import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 
 import { router } from "../router";
 
-import { controls, cx, dialog, real, slider, useFocus } from "./steam";
+import { controls, cx, dialog, real, scrollClass, slider, useFocus } from "./steam";
 
 // --- sections ---------------------------------------------------------------------------------
 
@@ -323,7 +323,7 @@ export function ButtonItem({ children, description, disabled, onClick }: ButtonI
 }
 
 // A plain focus container; the preview does not model gamepad navigation.
-export function Focusable({ children, style, onCancel }: { children?: ReactNode; style?: CSSProperties; onCancel?(): void }) {
+export function Focusable({ children, style, onCancel }: { children?: ReactNode; style?: CSSProperties; onCancel?(): void; noFocusRing?: boolean }) {
   return (
     <div
       className="Panel Focusable"
@@ -352,3 +352,115 @@ export const DialogBody = ({ children }: { children?: ReactNode }) => <div class
 export const DialogControlsSection = ({ children }: { children?: ReactNode }) => <div className="preview-dialog-section">{children}</div>;
 export const DialogControlsSectionHeader = ({ children }: { children?: ReactNode }) => <div className="preview-dialog-header">{children}</div>;
 export const DialogBodyText = ({ children }: { children?: ReactNode }) => <div className="preview-dialog-text">{children}</div>;
+
+interface FieldProps {
+  label?: ReactNode;
+  description?: ReactNode;
+  children?: ReactNode;
+  bottomSeparator?: "standard" | "thick" | "none";
+  focusable?: boolean;
+  onActivate?(event: unknown): void;
+  onClick?(event: unknown): void;
+}
+
+// A generic row: an optional label and description, optionally focusable and clickable.
+export function Field({ label, description, children, bottomSeparator = "standard", focusable, onActivate, onClick }: FieldProps) {
+  const { focused, bind } = useFocus();
+  const markFocusable = useContext(RowContext);
+  useEffect(() => {
+    if (focusable) markFocusable?.();
+  }, [focusable, markFocusable]);
+  const activate = (event: unknown) => (onClick ?? onActivate)?.(event);
+
+  if (!real) {
+    return (
+      <div className="approx-field" role={focusable ? "button" : undefined} tabIndex={focusable ? 0 : undefined} onClick={activate}>
+        {label && <div className="approx-label">{label}</div>}
+        {children}
+        {description && <div className="approx-desc">{description}</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cx(
+        dialog("Field"),
+        dialog("Classic"),
+        dialog("VerticalAlignCenter"),
+        bottomSeparator === "standard" && dialog("WithBottomSeparatorStandard"),
+        dialog("ExtraPaddingOnChildrenBelow"),
+        dialog("StandardPadding"),
+        focusable && dialog("Clickable"),
+        dialog("HighlightOnFocus"),
+        "Panel",
+        "Focusable",
+        focused && "gpfocuswithin",
+      )}
+      style={{ "--indent-level": 0 } as CSSProperties}
+      role={focusable ? "button" : undefined}
+      tabIndex={focusable ? 0 : undefined}
+      onClick={activate}
+      onKeyDown={(event) => {
+        if (focusable && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          activate(event);
+        }
+      }}
+      {...bind}
+    >
+      <div className={dialog("FieldLeftColumn")}>
+        {label && (
+          <div className={dialog("FieldLabelRow")}>
+            <div className={dialog("FieldLabel")}>{label}</div>
+          </div>
+        )}
+        {children}
+        {description && <div className={dialog("FieldDescription")}>{description}</div>}
+      </div>
+    </div>
+  );
+}
+
+// A small push button as used inside pages (Steam's DialogButton).
+export function DialogButton({ children, style, onClick }: { children?: ReactNode; style?: CSSProperties; onClick?(event: unknown): void }) {
+  const { focused, bind } = useFocus();
+  if (!real) {
+    return (
+      <button type="button" className="approx-button" style={{ ...style, width: style?.width ?? "100%" }} onClick={onClick}>
+        {children}
+      </button>
+    );
+  }
+  return (
+    <button
+      type="button"
+      role="button"
+      className={cx("DialogButton", "_DialogLayout", "Secondary", dialog("Button"), "Focusable", focused && "gpfocus")}
+      style={style}
+      onClick={onClick}
+      {...bind}
+    >
+      {children}
+    </button>
+  );
+}
+
+// --- scroll window pieces ------------------------------------------------------------------------
+
+// Class names of Steam's scroll panel and dialog positioning (approximations without a capture).
+export const scrollPanelClasses = { ScrollPanel: real ? scrollClass("ScrollPanel") : "approx-scroll-panel" };
+export const gamepadDialogClasses = { ModalPosition: dialog("ModalPosition"), WithStandardPadding: dialog("WithStandardPadding") };
+
+export function ModalPosition({ children }: { children?: ReactNode }) {
+  return <div className="modal-position-container">{children}</div>;
+}
+
+// Steam's scroll group: here simply a scrolling box.
+export function ScrollPanelGroup({ children }: { children?: ReactNode }) {
+  return (
+    <div className={scrollPanelClasses.ScrollPanel} style={{ height: "100%", overflowY: "auto" }}>
+      {children}
+    </div>
+  );
+}

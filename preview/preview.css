@@ -195,8 +195,10 @@ body {
 }
 
 .qam-icon {
+  display: inline-flex;
+  vertical-align: middle;
   font-size: 24px;
-  color: var(--muted);
+  color: var(--text);
 }
 
 /* Real Steam styles: the panel frame is only a box of the right size and color. */

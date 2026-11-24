@@ -12,6 +12,7 @@ export interface WrapperStatus {
 
 export interface Status {
   hdr_enabled: boolean;
+  hdr_active: boolean;
   saturation: number;
   streaming: boolean;
   wrapper: WrapperStatus;

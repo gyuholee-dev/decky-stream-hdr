@@ -1,34 +1,43 @@
-import { ButtonItem, Navigation, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { Field, Navigation, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
 import { definePlugin, routerHook } from "@decky/api";
 import { ReactNode, useEffect, useState } from "react";
 
 import { getStatus, setHdrEnabled, setSaturation, Status } from "./api";
+import { TitleView } from "./header";
 import { InfoIcon, StreamIcon } from "./icon";
 import { infoRoute, InfoPage } from "./info-page";
 import { errorText, strings } from "./strings";
 
 const SATURATION_MIN = 0;
 const SATURATION_MAX = 200;
-const SATURATION_STEP = 10;
+const SATURATION_STEP = 5;
 const SATURATION_DEFAULT = 100;
 
-function ButtonLabel({ icon, text }: { icon: ReactNode; text: string }) {
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
-      {icon}
-      {text}
-    </span>
-  );
+// Korean and similar languages are broken between words, not inside them (Steam's own style would
+// split a word at the end of a line). Very long unbreakable text such as a path still wraps.
+function KeepAll({ children }: { children: ReactNode }) {
+  return <span style={{ wordBreak: "keep-all", overflowWrap: "anywhere" }}>{children}</span>;
 }
 
-// The "Plugin Info" button at the bottom of the panel; the repository link is on the info page.
+// The "Plugin Info" row at the bottom of the panel: a small line of text with an icon that opens the
+// info page (the repository link is on that page). It is a plain row, not a full-size button, and is
+// only highlighted when it has focus.
 function Footer() {
   return (
     <PanelSection>
       <PanelSectionRow>
-        <ButtonItem layout="below" onClick={() => Navigation.Navigate(infoRoute)}>
-          <ButtonLabel icon={<InfoIcon />} text={strings.infoButton} />
-        </ButtonItem>
+        <Field
+          focusable
+          bottomSeparator="none"
+          onActivate={() => Navigation.Navigate(infoRoute)}
+          onClick={() => Navigation.Navigate(infoRoute)}
+          description={
+            <span style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", fontSize: "12px" }}>
+              {strings.infoButton}
+              <InfoIcon />
+            </span>
+          }
+        />
       </PanelSectionRow>
     </PanelSection>
   );
@@ -38,7 +47,7 @@ function Message({ text }: { text: string }) {
   return (
     <PanelSection>
       <PanelSectionRow>
-        <div>{text}</div>
+        <KeepAll>{text}</KeepAll>
       </PanelSectionRow>
     </PanelSection>
   );
@@ -63,7 +72,7 @@ function Content() {
         <PanelSectionRow>
           <ToggleField
             label={strings.hdrToggleLabel}
-            description={strings.hdrToggleDescription}
+            description={<KeepAll>{strings.hdrToggleDescription}</KeepAll>}
             checked={status.hdr_enabled}
             onChange={(enabled: boolean) => {
               setHdrEnabled(enabled)
@@ -74,13 +83,13 @@ function Content() {
         </PanelSectionRow>
         {status.error && (
           <PanelSectionRow>
-            <div>{strings.errorPrefix + errorText(status.error)}</div>
+            <KeepAll>{strings.errorPrefix + errorText(status.error)}</KeepAll>
           </PanelSectionRow>
         )}
         <PanelSectionRow>
           <SliderField
             label={strings.saturationLabel}
-            description={strings.saturationDescription}
+            description={<KeepAll>{strings.saturationDescription}</KeepAll>}
             value={status.saturation}
             min={SATURATION_MIN}
             max={SATURATION_MAX}
@@ -99,7 +108,7 @@ function Content() {
         </PanelSectionRow>
         {status.saturation_error && (
           <PanelSectionRow>
-            <div>{strings.errorPrefix + errorText(status.saturation_error)}</div>
+            <KeepAll>{strings.errorPrefix + errorText(status.saturation_error)}</KeepAll>
           </PanelSectionRow>
         )}
       </PanelSection>
@@ -113,7 +122,7 @@ export default definePlugin(() => {
 
   return {
     name: strings.pluginName,
-    titleView: <div>{strings.pluginName}</div>,
+    titleView: <TitleView />,
     content: <Content />,
     icon: <StreamIcon />,
     onDismount() {
