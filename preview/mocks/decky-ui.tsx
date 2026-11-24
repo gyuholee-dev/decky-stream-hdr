@@ -3,7 +3,7 @@
 // With a capture of the real Steam UI (`yarn capture`) they render the same markup and class names
 // as Steam's own components, so the real Steam CSS styles them. Without a capture they fall back to a
 // rough look made by preview/preview.css (class names starting with "approx-").
-import { createContext, useContext, useEffect, useRef } from "react";
+import { createContext, forwardRef, useContext, useEffect, useRef } from "react";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 
 import { router } from "../router";
@@ -457,10 +457,10 @@ export function ModalPosition({ children }: { children?: ReactNode }) {
 }
 
 // Steam's scroll group: here simply a scrolling box.
-export function ScrollPanelGroup({ children }: { children?: ReactNode }) {
+export const ScrollPanelGroup = forwardRef<HTMLDivElement, { children?: ReactNode; style?: CSSProperties }>(function ScrollPanelGroup({ children, style }, ref) {
   return (
-    <div className={scrollPanelClasses.ScrollPanel} style={{ height: "100%", overflowY: "auto" }}>
+    <div ref={ref} className={scrollPanelClasses.ScrollPanel} style={{ height: "100%", overflowY: "auto", ...style }}>
       {children}
     </div>
   );
-}
+});
