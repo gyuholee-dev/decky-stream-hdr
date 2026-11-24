@@ -49,11 +49,11 @@ body {
   font-weight: 600;
 }
 
-.ps {
+.approx-section {
   padding: 8px 0;
 }
 
-.ps-title {
+.approx-section-title {
   padding: 8px 16px 6px;
   font-size: 12px;
   font-weight: 700;
@@ -62,11 +62,11 @@ body {
   color: var(--muted);
 }
 
-.psr {
+.approx-row {
   padding: 4px 16px;
 }
 
-.field-row {
+.approx-field-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -74,18 +74,18 @@ body {
   min-height: 32px;
 }
 
-.field-label {
+.approx-label {
   font-size: 14px;
 }
 
-.field-desc {
+.approx-desc {
   margin-top: 4px;
   font-size: 12px;
   line-height: 1.4;
   color: var(--muted);
 }
 
-.toggle {
+.approx-toggle {
   flex: none;
   position: relative;
   width: 44px;
@@ -97,11 +97,11 @@ body {
   cursor: pointer;
 }
 
-.toggle.on {
+.approx-toggle.on {
   background: var(--accent);
 }
 
-.toggle .knob {
+.approx-toggle .approx-knob {
   position: absolute;
   top: 2px;
   left: 2px;
@@ -112,22 +112,22 @@ body {
   transition: transform 120ms;
 }
 
-.toggle.on .knob {
+.approx-toggle.on .approx-knob {
   transform: translateX(22px);
 }
 
-.slider-value {
+.approx-value {
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
 
-.slider {
+.approx-slider {
   width: 100%;
   margin: 6px 0 0;
   accent-color: var(--accent);
 }
 
-.slider-reset {
+.approx-slider-reset {
   margin-top: 4px;
   padding: 0;
   border: 0;
@@ -196,4 +196,30 @@ body {
 .qam-icon {
   font-size: 24px;
   color: var(--muted);
+}
+
+/* Real Steam styles: the panel frame is only a box of the right size and color. */
+.qam.real {
+  width: 300px;
+  min-height: 560px;
+  background: #0e141b;
+  border-radius: 0;
+}
+
+.qam.real .qam-title {
+  background: transparent;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+  padding: 16px;
+}
+
+.preview-slider-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
 }

@@ -3,7 +3,9 @@ import { createRoot } from "react-dom/client";
 
 import plugin from "../src/index";
 import { knobs, patchState } from "./backend";
+import "steam-ui.css";
 import "./preview.css";
+import { cx, real } from "./mocks/steam";
 
 // Type-level note: the preview renders the same `content` element the plugin hands to Decky.
 function Preview() {
@@ -19,7 +21,7 @@ function Preview() {
 
   return (
     <div className="page">
-      <div className="qam">
+      <div className={cx("qam", real && "real", real && "BasicUI")}>
         <div className="qam-title">
           {plugin.titleView}
           <span className="qam-icon" title="Icon in the Decky plugin list">{plugin.icon}</span>

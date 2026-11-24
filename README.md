@@ -55,14 +55,25 @@ A release zip (`scripts/package.sh`) contains `dist/`, `main.py`, `plugin.json`,
 
 ## Develop
 
-Development happens on any machine; building and installing happens on the client. The panel can be previewed in a desktop browser, with the Steam and Decky UI components and the plugin backend replaced by stand-ins:
+Development happens on any machine; building and installing happens on the client. The panel can be previewed in a desktop browser, with the plugin backend replaced by a stand-in:
 
 ```bash
 yarn install
 yarn serve       # dev server; add the browser with `yarn start`
 ```
 
-Then open http://localhost:5173/. The preview controls next to the panel switch the stand-in backend into other states (backend unreachable, a problem text, streaming). The stand-ins only approximate Steam's quick access menu, so check the final look on the device.
+Then open http://localhost:5173/. The preview controls next to the panel switch the stand-in backend into other states (backend unreachable, a problem text, streaming).
+
+### Real Steam styles in the preview
+
+Without extra setup the preview uses a rough approximation of Steam's quick access menu. To get the real look, capture Steam's styles from the client once (and again after Steam updates, because its class names change). The capture only reads class names, style rules and fonts from Steam's debugging port (which Decky Loader already enables) through an SSH tunnel:
+
+```bash
+ssh -N -L 8080:localhost:8080 <user>@<device>     # keep this running in a separate terminal
+yarn capture                                       # with the Decky menu open on the device
+```
+
+The result goes to `preview/steam-ui/`. It contains Valve's CSS and fonts, so it is git-ignored and for local use only.
 
 ```bash
 yarn test            # backend unit tests, only Python 3 is needed
