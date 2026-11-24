@@ -1,29 +1,41 @@
-"""Ties settings and the wrapper together. main.py only forwards calls here."""
+"""Ties settings, the wrapper and gamescope together. main.py only forwards calls here."""
 from __future__ import annotations
 
 import logging
 from typing import Any, Dict, Optional
 
-from . import wrapper
+from . import gamescope, saturation, wrapper
 from .paths import Paths
 from .settings import Settings
 
 
 class Controller:
-    def __init__(self, paths: Paths, settings: Settings, logger: Optional[logging.Logger] = None):
+    def __init__(
+        self,
+        paths: Paths,
+        settings: Settings,
+        logger: Optional[logging.Logger] = None,
+        gamescope_api: Any = gamescope,
+    ):
         self.paths = paths
         self.settings = settings
         self.log = logger or logging.getLogger("streamhdr")
+        self.gs = gamescope_api
         self.error: Optional[str] = None
+        self.saturation_error: Optional[str] = None
+        self.streaming = False
+        self._look_applied = False  # True while the saturation LUT atom is set by us
 
     # -- lifecycle -------------------------------------------------------
 
     def start(self) -> None:
-        """Called when the plugin backend loads: make the files match the saved settings."""
+        """Called when the plugin backend loads: make everything match the saved settings."""
+        self._clear_stale_look()
         self.apply_hdr(self.settings.get("hdr_enabled"))
 
     def stop(self) -> None:
-        """Called when the plugin unloads: put Steam's original client back."""
+        """Called when the plugin unloads: put Steam's original client and the display back."""
+        self._remove_look()
         try:
             if wrapper.restore(self.paths):
                 self.log.info("Restored the original streaming client")
@@ -31,6 +43,7 @@ class Controller:
             self.log.error("Could not restore the streaming client: %s", exc)
 
     def uninstall(self) -> None:
+        self._remove_look()
         try:
             wrapper.uninstall(self.paths)
             self.log.info("Removed all plugin files")
@@ -61,11 +74,78 @@ class Controller:
         self.apply_hdr(bool(enabled))
         return self.status()
 
+    # -- saturation ------------------------------------------------------
+
+    def set_saturation(self, percent: int) -> Dict[str, Any]:
+        percent = saturation.clamp_percent(int(percent))
+        self.settings.set("saturation", percent)
+        self.saturation_error = None
+        if percent != saturation.SATURATION_DEFAULT:
+            try:
+                saturation.ensure_lut(self.paths.luts_dir, percent)  # build it now, not at connect time
+            except OSError as exc:
+                self.saturation_error = "Could not create the color table: %s" % exc
+                self.log.error("%s", self.saturation_error)
+        if self.streaming:
+            self.apply_saturation()
+        return self.status()
+
+    def on_streaming_changed(self, streaming: bool) -> None:
+        """Called by the watcher when a stream starts or ends."""
+        self.streaming = streaming
+        self.log.info("Streaming %s", "started" if streaming else "ended")
+        if streaming:
+            self.apply_saturation()
+        else:
+            self._remove_look()
+
+    def apply_saturation(self) -> None:
+        percent = self.settings.get("saturation")
+        self.saturation_error = None
+        try:
+            if percent == saturation.SATURATION_DEFAULT:
+                self._remove_look()
+                return
+            lut = saturation.ensure_lut(self.paths.luts_dir, percent)
+            self.gs.set_look(lut, self.paths.gamescope_env)
+            self._look_applied = True
+        except gamescope.GamescopeError as exc:
+            self.saturation_error = str(exc)
+            self.log.error("Saturation problem: %s", exc)
+        except OSError as exc:
+            self.saturation_error = "Could not create the color table: %s" % exc
+            self.log.error("%s", self.saturation_error)
+
+    def _remove_look(self) -> None:
+        if not self._look_applied:
+            return
+        try:
+            self.gs.clear_look(self.paths.gamescope_env)
+        except gamescope.GamescopeError as exc:
+            self.log.error("Could not clear the color table: %s", exc)
+        self._look_applied = False
+
+    def _clear_stale_look(self) -> None:
+        """Remove a LUT left behind by a previous run of this plugin (for example after a crash)."""
+        try:
+            current = self.gs.get_look(self.paths.gamescope_env)
+        except gamescope.GamescopeError:
+            return  # gamescope is not reachable, so there is nothing to clean
+        if current and current.startswith(self.paths.luts_dir):
+            try:
+                self.gs.clear_look(self.paths.gamescope_env)
+                self.log.info("Cleared a color table left by a previous run")
+            except gamescope.GamescopeError as exc:
+                self.log.error("Could not clear the old color table: %s", exc)
+
     # -- status ----------------------------------------------------------
 
     def status(self) -> Dict[str, Any]:
         return {
             "hdr_enabled": bool(self.settings.get("hdr_enabled")),
+            "saturation": self.settings.get("saturation"),
+            "streaming": self.streaming,
             "wrapper": wrapper.status(self.paths),
             "error": self.error,
+            "saturation_error": self.saturation_error,
         }

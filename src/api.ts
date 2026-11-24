@@ -10,10 +10,14 @@ export interface WrapperStatus {
 
 export interface Status {
   hdr_enabled: boolean;
+  saturation: number;
+  streaming: boolean;
   wrapper: WrapperStatus;
   error: string | null;
+  saturation_error: string | null;
 }
 
 // Thin wrappers around backend methods defined in main.py.
 export const getStatus = callable<[], Status>("get_status");
 export const setHdrEnabled = callable<[enabled: boolean], Status>("set_hdr_enabled");
+export const setSaturation = callable<[percent: number], Status>("set_saturation");

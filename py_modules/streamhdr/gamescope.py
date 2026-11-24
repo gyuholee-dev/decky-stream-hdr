@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from typing import Callable, Dict, Optional
 
@@ -50,7 +51,7 @@ def read_environment(path: str) -> Dict[str, str]:
 Runner = Callable[..., "subprocess.CompletedProcess[str]"]
 
 
-def _run_xprop(args: list, env_file: str, run: Runner) -> None:
+def _run_xprop(args: list, env_file: str, run: Runner) -> str:
     env = dict(os.environ)
     env.update(read_environment(env_file))
     try:
@@ -61,6 +62,7 @@ def _run_xprop(args: list, env_file: str, run: Runner) -> None:
         raise GamescopeError("xprop timed out while talking to gamescope.")
     if result.returncode != 0:
         raise GamescopeError("xprop failed: %s" % (result.stderr or "").strip())
+    return result.stdout or ""
 
 
 def set_look(lut_path: str, env_file: str, run: Runner = subprocess.run) -> None:
@@ -69,3 +71,10 @@ def set_look(lut_path: str, env_file: str, run: Runner = subprocess.run) -> None
 
 def clear_look(env_file: str, run: Runner = subprocess.run) -> None:
     _run_xprop(["-remove", ATOM], env_file, run)
+
+
+def get_look(env_file: str, run: Runner = subprocess.run) -> Optional[str]:
+    """Return the LUT path currently set on the atom, or None when it is not set."""
+    output = _run_xprop([ATOM], env_file, run)
+    match = re.search(r'=\s*"(.*)"', output)
+    return match.group(1) if match else None

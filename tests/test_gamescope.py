@@ -52,6 +52,21 @@ class XpropTests(unittest.TestCase):
         gamescope.clear_look(self.env_file, self.runner())
         self.assertEqual(self.calls[0][0], ["xprop", "-root", "-remove", gamescope.ATOM])
 
+    def test_get_look_reads_current_path(self):
+        run = self.runner_with_stdout('GAMESCOPE_COLOR_LOOK_PQ(STRING) = "/luts/a.cube"\n')
+        self.assertEqual(gamescope.get_look(self.env_file, run), "/luts/a.cube")
+        self.assertEqual(self.calls[0][0], ["xprop", "-root", gamescope.ATOM])
+
+    def test_get_look_when_not_set(self):
+        run = self.runner_with_stdout("GAMESCOPE_COLOR_LOOK_PQ:  not found.\n")
+        self.assertIsNone(gamescope.get_look(self.env_file, run))
+
+    def runner_with_stdout(self, stdout):
+        def run(args, **kwargs):
+            self.calls.append((args, kwargs))
+            return subprocess.CompletedProcess(args, 0, stdout, "")
+        return run
+
     def test_missing_environment_file(self):
         with self.assertRaises(gamescope.GamescopeError):
             gamescope.set_look("/x", os.path.join(self.tmp, "none"), self.runner())

@@ -2,7 +2,7 @@ import json
 import os
 import unittest
 
-from streamhdr import wrapper
+from streamhdr import gamescope, saturation, wrapper
 from streamhdr.controller import Controller
 from streamhdr.settings import Settings
 
@@ -37,10 +37,37 @@ class SettingsTests(WrapperTestCase):
             Settings(self.path()).set("nope", 1)
 
 
+class FakeGamescope:
+    """Records calls instead of talking to gamescope."""
+
+    def __init__(self):
+        self.look = None
+        self.calls = []
+        self.fail = False
+
+    def set_look(self, path, env_file):
+        self.calls.append(("set", path))
+        if self.fail:
+            raise gamescope.GamescopeError("no gamescope")
+        self.look = path
+
+    def clear_look(self, env_file):
+        self.calls.append(("clear", None))
+        if self.fail:
+            raise gamescope.GamescopeError("no gamescope")
+        self.look = None
+
+    def get_look(self, env_file):
+        if self.fail:
+            raise gamescope.GamescopeError("no gamescope")
+        return self.look
+
+
 class ControllerTests(WrapperTestCase):
     def make(self):
         settings = Settings(os.path.join(self.tmp, "settings", "settings.json"))
-        return Controller(self.paths, settings)
+        self.gs = FakeGamescope()
+        return Controller(self.paths, settings, gamescope_api=self.gs)
 
     def test_enabling_installs_wrapper_and_sets_flag(self):
         controller = self.make()
@@ -94,6 +121,87 @@ class ControllerTests(WrapperTestCase):
         controller.uninstall()
         self.assertFalse(os.path.exists(self.paths.shim))
         self.assertFalse(os.path.exists(self.paths.flag))
+
+
+class SaturationTests(WrapperTestCase):
+    def make(self):
+        settings = Settings(os.path.join(self.tmp, "settings", "settings.json"))
+        self.gs = FakeGamescope()
+        return Controller(self.paths, settings, gamescope_api=self.gs)
+
+    def lut(self, percent):
+        return os.path.join(self.paths.luts_dir, saturation.lut_filename(percent))
+
+    def test_value_is_snapped_stored_and_lut_prepared(self):
+        controller = self.make()
+        status = controller.set_saturation(147)
+        self.assertEqual(status["saturation"], 150)
+        self.assertTrue(os.path.isfile(self.lut(150)))
+        self.assertEqual(Settings(os.path.join(self.tmp, "settings", "settings.json")).get("saturation"), 150)
+
+    def test_nothing_is_applied_while_not_streaming(self):
+        controller = self.make()
+        controller.set_saturation(150)
+        self.assertEqual(self.gs.calls, [])
+
+    def test_stream_start_applies_and_end_clears(self):
+        controller = self.make()
+        controller.set_saturation(150)
+        controller.on_streaming_changed(True)
+        self.assertEqual(self.gs.look, self.lut(150))
+        controller.on_streaming_changed(False)
+        self.assertIsNone(self.gs.look)
+
+    def test_changing_value_during_stream_applies_immediately(self):
+        controller = self.make()
+        controller.on_streaming_changed(True)
+        controller.set_saturation(130)
+        self.assertEqual(self.gs.look, self.lut(130))
+        controller.set_saturation(170)
+        self.assertEqual(self.gs.look, self.lut(170))
+
+    def test_default_value_clears_the_atom(self):
+        controller = self.make()
+        controller.set_saturation(150)
+        controller.on_streaming_changed(True)
+        controller.set_saturation(100)
+        self.assertIsNone(self.gs.look)
+        self.assertFalse(os.path.exists(self.lut(100)))
+
+    def test_default_value_never_touches_gamescope_when_nothing_was_set(self):
+        controller = self.make()
+        controller.on_streaming_changed(True)
+        controller.on_streaming_changed(False)
+        self.assertEqual(self.gs.calls, [])
+
+    def test_gamescope_problem_is_reported(self):
+        controller = self.make()
+        controller.set_saturation(150)
+        self.gs.fail = True
+        controller.on_streaming_changed(True)
+        self.assertIsNotNone(controller.status()["saturation_error"])
+
+    def test_stop_clears_the_atom(self):
+        controller = self.make()
+        controller.set_saturation(150)
+        controller.on_streaming_changed(True)
+        controller.stop()
+        self.assertIsNone(self.gs.look)
+
+    def test_start_clears_a_leftover_atom_from_this_plugin_only(self):
+        controller = self.make()
+        self.gs.look = self.lut(150)
+        controller.start()
+        self.assertIsNone(self.gs.look)
+        controller = self.make()
+        self.gs.look = "/home/user/own.cube"
+        controller.start()
+        self.assertEqual(self.gs.look, "/home/user/own.cube")
+
+    def test_start_without_gamescope_is_fine(self):
+        controller = self.make()
+        self.gs.fail = True
+        controller.start()
 
 
 if __name__ == "__main__":
