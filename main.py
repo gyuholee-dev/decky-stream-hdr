@@ -15,9 +15,13 @@ from streamhdr.settings import Settings  # noqa: E402
 from streamhdr.watcher import StreamWatcher  # noqa: E402
 
 
+MAINTAIN_INTERVAL_SECONDS = 20
+
+
 class Plugin:
     controller: Controller
     watch_task: "asyncio.Task | None" = None
+    maintain_task: "asyncio.Task | None" = None
 
     async def _main(self):
         uid = pwd.getpwnam(decky.DECKY_USER).pw_uid
@@ -35,11 +39,24 @@ class Plugin:
 
         self.watch_task = loop.create_task(StreamWatcher(on_change).run())
 
+        async def maintain_forever():
+            # Steam restores its own streaming client on restart and update; put the wrapper back.
+            while True:
+                await asyncio.sleep(MAINTAIN_INTERVAL_SECONDS)
+                try:
+                    await loop.run_in_executor(None, self.controller.maintain)
+                except Exception as exc:  # keep the loop alive whatever happens
+                    decky.logger.error("Maintenance failed: %s", exc)
+
+        self.maintain_task = loop.create_task(maintain_forever())
+
     async def _unload(self):
         decky.logger.info("StreamHDR backend unloading")
-        if self.watch_task:
-            self.watch_task.cancel()
-            self.watch_task = None
+        for task in (self.watch_task, self.maintain_task):
+            if task:
+                task.cancel()
+        self.watch_task = None
+        self.maintain_task = None
         await asyncio.get_running_loop().run_in_executor(None, self.controller.stop)
 
     async def _uninstall(self):

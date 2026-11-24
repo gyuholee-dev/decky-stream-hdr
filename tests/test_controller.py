@@ -204,5 +204,52 @@ class SaturationTests(WrapperTestCase):
         controller.start()
 
 
+class MaintainTests(WrapperTestCase):
+    def make(self):
+        settings = Settings(os.path.join(self.tmp, "settings", "settings.json"))
+        self.gs = FakeGamescope()
+        return Controller(self.paths, settings, gamescope_api=self.gs)
+
+    def test_reinstalls_wrapper_after_steam_restores_original(self):
+        controller = self.make()
+        controller.set_hdr_enabled(True)
+        self.write_client(b"\x7fELF-steam-update")
+        controller.maintain()
+        self.assertTrue(controller.status()["wrapper"]["wrapped"])
+        with open(self.paths.real, "rb") as handle:
+            self.assertEqual(handle.read(), b"\x7fELF-steam-update")
+
+    def test_does_nothing_when_hdr_is_off(self):
+        controller = self.make()
+        controller.maintain()
+        self.assertFalse(controller.status()["wrapper"]["wrapped"])
+
+    def test_recovers_after_steam_was_not_yet_started(self):
+        os.remove(self.paths.client)
+        controller = self.make()
+        controller.set_hdr_enabled(True)
+        self.assertIsNotNone(controller.status()["error"])
+        self.write_client(b"\x7fELF-late")
+        controller.maintain()
+        self.assertIsNone(controller.status()["error"])
+        self.assertTrue(controller.status()["wrapper"]["enabled"])
+
+    def test_reapplies_a_lost_color_table_while_streaming(self):
+        controller = self.make()
+        controller.set_saturation(150)
+        controller.on_streaming_changed(True)
+        self.gs.look = None  # for example gamescope restarted
+        controller.maintain()
+        self.assertEqual(self.gs.look, os.path.join(self.paths.luts_dir, saturation.lut_filename(150)))
+
+    def test_leaves_a_correct_color_table_alone(self):
+        controller = self.make()
+        controller.set_saturation(150)
+        controller.on_streaming_changed(True)
+        self.gs.calls.clear()
+        controller.maintain()
+        self.assertEqual(self.gs.calls, [])
+
+
 if __name__ == "__main__":
     unittest.main()

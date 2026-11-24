@@ -52,6 +52,20 @@ class InstallTests(WrapperTestCase):
         self.assertNotIn("__SHIM__", script)
         self.assertTrue(os.path.isfile(self.paths.shim))
 
+    def test_original_inode_is_kept_and_client_path_is_never_empty(self):
+        before = os.stat(self.paths.client).st_ino
+        wrapper.install(self.paths)
+        self.assertEqual(os.stat(self.paths.real).st_ino, before)
+        self.assertFalse(os.path.exists(self.paths.real + ".streamhdr-tmp"))
+
+    def test_needs_attention_tracks_missing_pieces(self):
+        self.assertTrue(wrapper.needs_attention(self.paths))
+        wrapper.install(self.paths)
+        wrapper.set_enabled(self.paths, True)
+        self.assertFalse(wrapper.needs_attention(self.paths))
+        os.remove(self.paths.shim)
+        self.assertTrue(wrapper.needs_attention(self.paths))
+
     def test_install_is_idempotent(self):
         wrapper.install(self.paths)
         self.assertEqual(wrapper.install(self.paths), "ok")

@@ -93,6 +93,27 @@ def _install_shim(paths: Paths, owner: Owner) -> None:
     os.replace(tmp, paths.shim)
 
 
+def _keep_original(paths: Paths) -> None:
+    tmp = paths.real + ".streamhdr-tmp"
+    if os.path.lexists(tmp):
+        os.remove(tmp)
+    try:
+        os.link(paths.client, tmp)
+    except OSError:
+        shutil.copy2(paths.client, tmp)  # file systems without hard links
+    os.replace(tmp, paths.real)
+
+
+def needs_attention(paths: Paths) -> bool:
+    """Cheap check for the periodic maintenance: has anything the wrapper relies on gone missing?"""
+    return not (
+        is_wrapper(paths.client)
+        and os.path.isfile(paths.real)
+        and os.path.isfile(paths.shim)
+        and os.path.isfile(paths.flag)
+    )
+
+
 def install(paths: Paths) -> str:
     """Make sure the wrapper is in place. Returns what was done: 'installed', 'updated' or 'ok'."""
     if not os.path.isfile(paths.client):
@@ -119,7 +140,9 @@ def install(paths: Paths) -> str:
         raise WrapperError("Steam's streaming client has an unexpected format; leaving it untouched.")
 
     # The original binary is back (first run, Steam restart, or a Steam update).
-    os.replace(paths.client, paths.real)
+    # Keep it as streaming_client.real through a hard link and then swap the script in with a
+    # single rename, so the client path never disappears while a stream could be starting.
+    _keep_original(paths)
     _atomic_write(paths.client, wanted, 0o755, owner)
     return "installed"
 

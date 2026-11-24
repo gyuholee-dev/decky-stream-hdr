@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any, Dict, Optional
 
 from . import gamescope, saturation, wrapper
@@ -73,6 +74,28 @@ class Controller:
         self.settings.set("hdr_enabled", bool(enabled))
         self.apply_hdr(bool(enabled))
         return self.status()
+
+    # -- periodic maintenance --------------------------------------------
+
+    def maintain(self) -> None:
+        """Called every few seconds: repair what Steam or gamescope may have undone."""
+        if self.settings.get("hdr_enabled") and wrapper.needs_attention(self.paths):
+            previous = self.error
+            self.apply_hdr(True)
+            if self.error is None and previous is None:
+                self.log.info("Reinstalled the streaming client wrapper")
+        if self.streaming and self.settings.get("saturation") != saturation.SATURATION_DEFAULT:
+            self._reapply_look_if_lost()
+
+    def _reapply_look_if_lost(self) -> None:
+        expected = os.path.join(self.paths.luts_dir, saturation.lut_filename(self.settings.get("saturation")))
+        try:
+            current = self.gs.get_look(self.paths.gamescope_env)
+        except gamescope.GamescopeError:
+            return
+        if current != expected:
+            self.log.info("The color table was reset; applying it again")
+            self.apply_saturation()
 
     # -- saturation ------------------------------------------------------
 
