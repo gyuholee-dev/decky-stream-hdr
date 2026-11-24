@@ -75,6 +75,12 @@ yarn capture                                       # with the Decky menu open on
 
 The result goes to `preview/steam-ui/`. It contains Valve's CSS and fonts, so it is git-ignored and for local use only.
 
+### Languages
+
+All texts live in `src/locales/`. `en.ts` is the reference language; the plugin picks the language Steam is set to and falls back to English for anything a language does not provide. Errors from the backend arrive as codes (`py_modules/streamhdr/errors.py`) and are turned into text from the `errors` table of the language files, so they can be translated too.
+
+To add a language, create `src/locales/<code>.ts` exporting a `Partial<Strings>` (for example `ko.ts`) and register it in `src/locales/index.ts`. Try it in the preview with `?lang=koreana` (Steam's name for the language) added to the address. The language is read once when the plugin loads, from `LocalizationManager.m_rgLocalesToUse` (checked on a device: it holds `["ko"]` for a Korean Steam).
+
 ```bash
 yarn test            # backend unit tests, only Python 3 is needed
 yarn typecheck       # TypeScript type check

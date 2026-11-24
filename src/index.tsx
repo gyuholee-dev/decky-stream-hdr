@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { getStatus, setHdrEnabled, setSaturation, Status } from "./api";
 import { StreamIcon } from "./icon";
-import { strings } from "./strings";
+import { errorText, strings } from "./strings";
 
 const SATURATION_MIN = 0;
 const SATURATION_MAX = 200;
@@ -13,7 +13,7 @@ const SATURATION_DEFAULT = 100;
 
 function Message({ text }: { text: string }) {
   return (
-    <PanelSection title={strings.sectionTitle}>
+    <PanelSection>
       <PanelSectionRow>
         <div>{text}</div>
       </PanelSectionRow>
@@ -35,7 +35,7 @@ function Content() {
   if (!status) return <Message text={strings.statusLoading} />;
 
   return (
-    <PanelSection title={strings.sectionTitle}>
+    <PanelSection>
       <PanelSectionRow>
         <ToggleField
           label={strings.hdrToggleLabel}
@@ -50,7 +50,7 @@ function Content() {
       </PanelSectionRow>
       {status.error && (
         <PanelSectionRow>
-          <div>{strings.errorPrefix + status.error}</div>
+          <div>{strings.errorPrefix + errorText(status.error)}</div>
         </PanelSectionRow>
       )}
       <PanelSectionRow>
@@ -75,7 +75,7 @@ function Content() {
       </PanelSectionRow>
       {status.saturation_error && (
         <PanelSectionRow>
-          <div>{strings.errorPrefix + status.saturation_error}</div>
+          <div>{strings.errorPrefix + errorText(status.saturation_error)}</div>
         </PanelSectionRow>
       )}
     </PanelSection>

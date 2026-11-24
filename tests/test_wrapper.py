@@ -87,25 +87,29 @@ class InstallTests(WrapperTestCase):
 
     def test_missing_client_raises(self):
         os.remove(self.paths.client)
-        with self.assertRaises(wrapper.WrapperError):
+        with self.assertRaises(wrapper.WrapperError) as raised:
             wrapper.install(self.paths)
+        self.assertEqual(raised.exception.code, "client_not_found")
 
     def test_wrapper_without_saved_original_raises(self):
         wrapper.install(self.paths)
         os.remove(self.paths.real)
-        with self.assertRaises(wrapper.WrapperError):
+        with self.assertRaises(wrapper.WrapperError) as raised:
             wrapper.install(self.paths)
+        self.assertEqual(raised.exception.code, "original_missing")
 
     def test_unknown_format_is_left_untouched(self):
         self.write_client(b"not an elf file")
-        with self.assertRaises(wrapper.WrapperError):
+        with self.assertRaises(wrapper.WrapperError) as raised:
             wrapper.install(self.paths)
+        self.assertEqual(raised.exception.code, "unknown_format")
         self.assertEqual(self.read(self.paths.client), b"not an elf file")
 
     def test_missing_bundled_shim_raises(self):
         os.remove(self.paths.shim_src)
-        with self.assertRaises(wrapper.WrapperError):
+        with self.assertRaises(wrapper.WrapperError) as raised:
             wrapper.install(self.paths)
+        self.assertEqual(raised.exception.code, "shim_missing")
         self.assertEqual(self.read(self.paths.client), ELF_V1)
 
     def test_changed_bundled_shim_is_copied_again(self):

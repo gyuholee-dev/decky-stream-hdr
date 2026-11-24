@@ -81,10 +81,12 @@ class XpropTests(unittest.TestCase):
         with self.assertRaises(gamescope.GamescopeError) as raised:
             gamescope.clear_look(self.env_file, self.runner(error=FileNotFoundError()))
         self.assertIn("xprop", str(raised.exception))
+        self.assertEqual(raised.exception.code, "xprop_missing")
 
     def test_failed_command(self):
-        with self.assertRaises(gamescope.GamescopeError):
+        with self.assertRaises(gamescope.GamescopeError) as raised:
             gamescope.clear_look(self.env_file, self.runner(returncode=1))
+        self.assertEqual(raised.exception.info(), {"code": "xprop_failed", "detail": "boom"})
 
     def test_timeout(self):
         with self.assertRaises(gamescope.GamescopeError):

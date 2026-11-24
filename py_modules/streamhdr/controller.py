@@ -7,6 +7,7 @@ import shutil
 from typing import Any, Dict, Optional
 
 from . import gamescope, saturation, wrapper
+from .errors import info_for
 from .paths import Paths
 from .settings import Settings
 
@@ -23,8 +24,8 @@ class Controller:
         self.settings = settings
         self.log = logger or logging.getLogger("streamhdr")
         self.gs = gamescope_api
-        self.error: Optional[str] = None
-        self.saturation_error: Optional[str] = None
+        self.error: Optional[Dict[str, Any]] = None
+        self.saturation_error: Optional[Dict[str, Any]] = None
         self.streaming = False
         self._look_applied = False  # True while the saturation LUT atom is set by us
 
@@ -69,12 +70,12 @@ class Controller:
                     self.log.info("Streaming client wrapper %s", result)
             wrapper.set_enabled(self.paths, enabled)
         except wrapper.WrapperError as exc:
-            self.error = str(exc)
+            self.error = exc.info()
             self.log.error("Wrapper problem: %s", exc)
             wrapper.set_enabled(self.paths, False)
         except OSError as exc:
-            self.error = "File operation failed: %s" % exc
-            self.log.error("%s", self.error)
+            self.error = info_for("file_operation_failed", str(exc))
+            self.log.error("File operation failed: %s", exc)
 
     def set_hdr_enabled(self, enabled: bool) -> Dict[str, Any]:
         self.settings.set("hdr_enabled", bool(enabled))
@@ -113,8 +114,8 @@ class Controller:
             try:
                 saturation.ensure_lut(self.paths.luts_dir, percent)  # build it now, not at connect time
             except OSError as exc:
-                self.saturation_error = "Could not create the color table: %s" % exc
-                self.log.error("%s", self.saturation_error)
+                self.saturation_error = info_for("lut_failed", str(exc))
+                self.log.error("Could not create the color table: %s", exc)
         if self.streaming:
             self.apply_saturation()
         return self.status()
@@ -139,11 +140,11 @@ class Controller:
             self.gs.set_look(lut, self.paths.gamescope_env)
             self._look_applied = True
         except gamescope.GamescopeError as exc:
-            self.saturation_error = str(exc)
+            self.saturation_error = exc.info()
             self.log.error("Saturation problem: %s", exc)
         except OSError as exc:
-            self.saturation_error = "Could not create the color table: %s" % exc
-            self.log.error("%s", self.saturation_error)
+            self.saturation_error = info_for("lut_failed", str(exc))
+            self.log.error("Could not create the color table: %s", exc)
 
     def _remove_look(self) -> None:
         if not self._look_applied:

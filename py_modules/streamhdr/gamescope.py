@@ -6,12 +6,14 @@ import re
 import subprocess
 from typing import Callable, Dict, Optional
 
+from .errors import CodedError
+
 ATOM = "GAMESCOPE_COLOR_LOOK_PQ"
 ENVIRONMENT_FILE = "gamescope-environment"
 
 
-class GamescopeError(Exception):
-    """A problem the user can act on; the message is shown as-is."""
+class GamescopeError(CodedError):
+    """A problem the user can act on."""
 
 
 def environment_file_for(uid: int, runtime_dir: Optional[str] = None) -> str:
@@ -42,9 +44,9 @@ def read_environment(path: str) -> Dict[str, str]:
         with open(path, "r", encoding="utf-8") as handle:
             env = parse_environment(handle.read())
     except OSError:
-        raise GamescopeError("gamescope's environment file was not found. Is gamescope running?")
+        raise GamescopeError("env_missing", "gamescope's environment file was not found. Is gamescope running?")
     if "DISPLAY" not in env:
-        raise GamescopeError("gamescope's environment file has no DISPLAY entry.")
+        raise GamescopeError("env_no_display", "gamescope's environment file has no DISPLAY entry.")
     return env
 
 
@@ -57,11 +59,12 @@ def _run_xprop(args: list, env_file: str, run: Runner) -> str:
     try:
         result = run(["xprop", "-root"] + args, env=env, capture_output=True, text=True, timeout=10)
     except FileNotFoundError:
-        raise GamescopeError("The xprop tool is not installed, so saturation cannot be applied.")
+        raise GamescopeError("xprop_missing", "The xprop tool is not installed, so saturation cannot be applied.")
     except subprocess.TimeoutExpired:
-        raise GamescopeError("xprop timed out while talking to gamescope.")
+        raise GamescopeError("xprop_timeout", "xprop timed out while talking to gamescope.")
     if result.returncode != 0:
-        raise GamescopeError("xprop failed: %s" % (result.stderr or "").strip())
+        detail = (result.stderr or "").strip()
+        raise GamescopeError("xprop_failed", "xprop failed: %s" % detail, detail or None)
     return result.stdout or ""
 
 

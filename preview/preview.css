@@ -173,7 +173,8 @@ body {
   gap: 8px;
 }
 
-.dev input[type="text"] {
+.dev input[type="text"],
+.dev select {
   padding: 6px 8px;
   border: 1px solid var(--track);
   border-radius: 3px;

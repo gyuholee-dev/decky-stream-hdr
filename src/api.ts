@@ -1,5 +1,7 @@
 import { callable } from "@decky/api";
 
+import type { ErrorInfo } from "./strings";
+
 export interface WrapperStatus {
   client_found: boolean;
   wrapped: boolean;
@@ -13,8 +15,8 @@ export interface Status {
   saturation: number;
   streaming: boolean;
   wrapper: WrapperStatus;
-  error: string | null;
-  saturation_error: string | null;
+  error: ErrorInfo | null;
+  saturation_error: ErrorInfo | null;
 }
 
 // Thin wrappers around backend methods defined in main.py.

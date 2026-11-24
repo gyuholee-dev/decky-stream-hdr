@@ -10,6 +10,7 @@ import os
 import shutil
 from typing import Optional, Tuple
 
+from .errors import CodedError
 from .paths import Paths
 
 MARKER = "# streamhdr-wrapper v1"
@@ -18,8 +19,8 @@ ELF_MAGIC = b"\x7fELF"
 Owner = Optional[Tuple[int, int]]
 
 
-class WrapperError(Exception):
-    """A problem the user can act on; the message is shown as-is."""
+class WrapperError(CodedError):
+    """A problem the user can act on."""
 
 
 def _head(path: str, size: int = 512) -> bytes:
@@ -82,7 +83,7 @@ def _atomic_write(path: str, data: str, mode: int, owner: Owner) -> None:
 
 def _install_shim(paths: Paths, owner: Owner) -> None:
     if not os.path.isfile(paths.shim_src):
-        raise WrapperError("The bundled injection library is missing from the plugin package.")
+        raise WrapperError("shim_missing", "The bundled injection library is missing from the plugin package.")
     _ensure_dir(paths.data_dir, owner)
     if os.path.isfile(paths.shim) and filecmp.cmp(paths.shim_src, paths.shim, shallow=False):
         return
@@ -117,7 +118,7 @@ def needs_attention(paths: Paths) -> bool:
 def install(paths: Paths) -> str:
     """Make sure the wrapper is in place. Returns what was done: 'installed', 'updated' or 'ok'."""
     if not os.path.isfile(paths.client):
-        raise WrapperError("Steam's streaming client was not found. Start Steam once and try again.")
+        raise WrapperError("client_not_found", "Steam's streaming client was not found. Start Steam once and try again.")
     owner = _owner_of(os.path.dirname(paths.client))
     _install_shim(paths, owner)
 
@@ -127,6 +128,7 @@ def install(paths: Paths) -> str:
     if is_wrapper(paths.client):
         if not os.path.isfile(paths.real):
             raise WrapperError(
+                "original_missing",
                 "The wrapper is installed but the original streaming client copy is missing. "
                 "Restart Steam to restore the original, then reload the plugin."
             )
@@ -137,7 +139,7 @@ def install(paths: Paths) -> str:
         return "updated"
 
     if not is_elf(paths.client):
-        raise WrapperError("Steam's streaming client has an unexpected format; leaving it untouched.")
+        raise WrapperError("unknown_format", "Steam's streaming client has an unexpected format; leaving it untouched.")
 
     # The original binary is back (first run, Steam restart, or a Steam update).
     # Keep it as streaming_client.real through a hard link and then swap the script in with a

@@ -12,8 +12,8 @@ export interface PreviewStatus {
     shim_installed: boolean;
     enabled: boolean;
   };
-  error: string | null;
-  saturation_error: string | null;
+  error: { code: string; detail: string | null } | null;
+  saturation_error: { code: string; detail: string | null } | null;
 }
 
 export const knobs = {

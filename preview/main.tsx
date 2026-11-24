@@ -2,12 +2,16 @@ import { useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import plugin from "../src/index";
+import { strings } from "../src/strings";
 import { knobs, patchState } from "./backend";
+import "./setup";
 import "steam-ui.css";
 import "./preview.css";
 import { cx, real } from "./mocks/steam";
 
-// Type-level note: the preview renders the same `content` element the plugin hands to Decky.
+const errorCodes = Object.keys(strings.errors);
+
+// The preview renders the same `content` element the plugin hands to Decky.
 function Preview() {
   // Changing a knob remounts the panel so that it fetches the new state, like reopening it.
   const [remountKey, setRemountKey] = useState(0);
@@ -60,31 +64,42 @@ function Preview() {
           Streaming now
         </label>
         <label>
-          HDR problem text
-          <input
-            type="text"
+          HDR problem
+          <select
             value={error}
-            placeholder="empty = no problem"
             onChange={(event) => {
-              patchState({ error: event.target.value || null });
+              patchState({ error: event.target.value ? { code: event.target.value, detail: "sample detail" } : null });
               setError(event.target.value);
               remount();
             }}
-          />
+          >
+            <option value="">none</option>
+            {errorCodes.map((code) => (
+              <option key={code} value={code}>
+                {code}
+              </option>
+            ))}
+          </select>
         </label>
         <label>
-          Saturation problem text
-          <input
-            type="text"
+          Saturation problem
+          <select
             value={saturationError}
-            placeholder="empty = no problem"
             onChange={(event) => {
-              patchState({ saturation_error: event.target.value || null });
+              patchState({ saturation_error: event.target.value ? { code: event.target.value, detail: "sample detail" } : null });
               setSaturationError(event.target.value);
               remount();
             }}
-          />
+          >
+            <option value="">none</option>
+            {errorCodes.map((code) => (
+              <option key={code} value={code}>
+                {code}
+              </option>
+            ))}
+          </select>
         </label>
+        <p className="note">Add ?lang=koreana to the address to try another language.</p>
         <label>
           Backend latency: {latency} ms
           <input

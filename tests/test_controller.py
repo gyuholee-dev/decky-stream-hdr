@@ -48,18 +48,18 @@ class FakeGamescope:
     def set_look(self, path, env_file):
         self.calls.append(("set", path))
         if self.fail:
-            raise gamescope.GamescopeError("no gamescope")
+            raise gamescope.GamescopeError("env_missing", "no gamescope")
         self.look = path
 
     def clear_look(self, env_file):
         self.calls.append(("clear", None))
         if self.fail:
-            raise gamescope.GamescopeError("no gamescope")
+            raise gamescope.GamescopeError("env_missing", "no gamescope")
         self.look = None
 
     def get_look(self, env_file):
         if self.fail:
-            raise gamescope.GamescopeError("no gamescope")
+            raise gamescope.GamescopeError("env_missing", "no gamescope")
         return self.look
 
 
@@ -105,7 +105,7 @@ class ControllerTests(WrapperTestCase):
         os.remove(self.paths.client)
         controller = self.make()
         status = controller.set_hdr_enabled(True)
-        self.assertIsNotNone(status["error"])
+        self.assertEqual(status["error"], {"code": "client_not_found", "detail": None})
         self.assertFalse(status["wrapper"]["enabled"])
 
     def test_stop_restores_original(self):
@@ -181,7 +181,7 @@ class SaturationTests(WrapperTestCase):
         controller.set_saturation(150)
         self.gs.fail = True
         controller.on_streaming_changed(True)
-        self.assertIsNotNone(controller.status()["saturation_error"])
+        self.assertEqual(controller.status()["saturation_error"], {"code": "env_missing", "detail": None})
 
     def test_stop_clears_the_atom(self):
         controller = self.make()
