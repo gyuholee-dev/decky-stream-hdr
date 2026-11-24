@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 
 import plugin from "../src/index";
 import { strings } from "../src/strings";
 import { knobs, patchState } from "./backend";
+import { router } from "./router";
 import "./setup";
 import "steam-ui.css";
 import "./preview.css";
@@ -22,6 +23,8 @@ function Preview() {
   const [latency, setLatency] = useState(knobs.latencyMs);
 
   const remount = () => setRemountKey((key) => key + 1);
+  const routePath = useSyncExternalStore(router.subscribe, router.currentPath);
+  const RoutePage = useSyncExternalStore(router.subscribe, router.currentComponent);
 
   return (
     <div className="page">
@@ -32,6 +35,20 @@ function Preview() {
         </div>
         <div key={remountKey}>{plugin.content}</div>
       </div>
+
+      {RoutePage && (
+        <div className="page-window">
+          <div className="page-window-bar">
+            <button type="button" onClick={router.back}>
+              Back
+            </button>
+            <span>{routePath}</span>
+          </div>
+          <div className="page-window-body">
+            <RoutePage />
+          </div>
+        </div>
+      )}
 
       <aside className="dev">
         <h2>Preview controls</h2>

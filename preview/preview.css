@@ -224,3 +224,74 @@ body {
   opacity: 0;
   cursor: pointer;
 }
+
+/* Approximate look of buttons when no Steam capture exists. */
+.approx-button {
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 2px;
+  background: #3d4450;
+  color: #dfe3e6;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The page that the plugin registers as a route, shown in place of the main Steam window. */
+.page-window {
+  width: 560px;
+  min-height: 560px;
+  background: #0e141b;
+  position: relative;
+}
+
+.page-window-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.page-window-bar button {
+  padding: 2px 10px;
+  border: 1px solid var(--track);
+  border-radius: 3px;
+  background: var(--panel-title);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.page-window-body {
+  height: 520px;
+  overflow: hidden;
+}
+
+.preview-dialog-body {
+  padding: 0 24px 24px;
+  color: #dcdedf;
+}
+
+.preview-dialog-section {
+  margin: 0 0 24px;
+}
+
+.preview-dialog-header {
+  padding: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 8px;
+}
+
+.preview-dialog-text {
+  font-size: 14px;
+  line-height: 20px;
+  color: #b8bcbf;
+  margin: 0 0 6px;
+}

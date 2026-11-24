@@ -79,7 +79,7 @@ The result goes to `preview/steam-ui/`. It contains Valve's CSS and fonts, so it
 
 All texts live in `src/locales/`. `en.ts` is the reference language; the plugin picks the language Steam is set to and falls back to English for anything a language does not provide. Errors from the backend arrive as codes (`py_modules/streamhdr/errors.py`) and are turned into text from the `errors` table of the language files, so they can be translated too.
 
-To add a language, create `src/locales/<code>.ts` exporting a `Partial<Strings>` (for example `ko.ts`) and register it in `src/locales/index.ts`. Try it in the preview with `?lang=koreana` (Steam's name for the language) added to the address. The language is read once when the plugin loads, from `LocalizationManager.m_rgLocalesToUse` (checked on a device: it holds `["ko"]` for a Korean Steam).
+To add a language, create `src/locales/<code>.ts` exporting a `Partial<Strings>` and register it in `src/locales/index.ts`. English and Korean (`ko.ts`) are included; in Korean the plugin and option names stay in English and only the descriptions and messages are translated. Try it in the preview with `?lang=koreana` (Steam's name for the language) added to the address. The language is read once when the plugin loads, from `LocalizationManager.m_rgLocalesToUse` (checked on a device: it holds `["ko"]` for a Korean Steam).
 
 ```bash
 yarn test            # backend unit tests, only Python 3 is needed
@@ -87,6 +87,10 @@ yarn typecheck       # TypeScript type check
 ```
 
 Build steps by hand (Linux): `yarn build`, `make -C backend`, then `scripts/package.sh`.
+
+## Panel footer and info page
+
+The bottom of the panel has a "Plugin Info" button, which opens a page (a route registered through `routerHook`) that explains what the plugin does, how to use it and what the host PC needs, and a "GitHub" button that opens the repository in Steam's browser. The version, author, license and repository address shown there come from `package.json` at build time. The layout of the footer follows other Decky plugins; no code was taken from them.
 
 ## Limitations
 

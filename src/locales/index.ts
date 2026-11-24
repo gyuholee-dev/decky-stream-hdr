@@ -1,8 +1,10 @@
-import { en, Strings } from "./en";
+import { en } from "./en";
+import type { LocaleStrings, ResolvedStrings } from "./types";
+import { ko } from "./ko";
 
-// To add a language: create src/locales/<code>.ts exporting a `Partial<Strings>` (texts left out
+// To add a language: create src/locales/<code>.ts exporting a `LocaleStrings` (texts left out
 // fall back to English), then register it here.
-export const locales: Record<string, Partial<Strings>> = { en };
+export const locales: Record<string, LocaleStrings> = { en, ko };
 
 // Steam's own setting already holds language codes ("ko"), but its settings API names languages in
 // English ("koreana"); this table covers that second form in case a name shows up.
@@ -39,15 +41,15 @@ export function detectLanguages(): string[] {
   return found;
 }
 
-function findLocale(code: string): Partial<Strings> | undefined {
+function findLocale(code: string): LocaleStrings | undefined {
   return locales[code] ?? locales[code.split("-")[0]];
 }
 
 // The first requested language that has a file wins; anything it lacks comes from English.
-export function resolveStrings(requested: string[]): Strings {
+export function resolveStrings(requested: string[]): ResolvedStrings {
   for (const code of requested) {
     const locale = findLocale(code);
-    if (locale) return { ...en, ...locale, errors: { ...en.errors, ...locale.errors } };
+    if (locale) return { ...en, ...locale, errors: { ...en.errors, ...locale.errors }, info: { ...en.info, ...locale.info } };
   }
   return en;
 }

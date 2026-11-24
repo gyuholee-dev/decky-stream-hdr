@@ -14,6 +14,33 @@ export const en = {
   saturationDescription:
     "Boosts the color saturation of the HDR stream. 100% leaves colors unchanged and 150% is recommended. " +
     "Applies only while you are streaming. Very high values can clip strongly colored areas.",
+  infoButton: "Plugin Info",
+  githubButton: "GitHub",
+  // Texts of the info page that the "Plugin Info" button opens.
+  info: {
+    aboutHeading: "About",
+    about:
+      "StreamHDR lets Steam Remote Play deliver real HDR to this device. Steam's Linux streaming client " +
+      "always asks the host for SDR, because SDL cannot detect HDR under X11. This plugin makes the client ask for HDR instead.",
+    usageHeading: "Usage",
+    usage: [
+      "Turn on HDR streaming, then connect to your host PC with Remote Play. The setting applies from the next connection.",
+      "Use Saturation to make colors stronger while streaming. 100% leaves colors unchanged and 150% is recommended.",
+      "Both options only affect Remote Play streaming. Local games are not changed.",
+    ],
+    hostHeading: "Host PC",
+    host: [
+      "In Steam's Remote Play settings, set Streaming display HDR to Default, or to Custom with HDR enabled. " +
+        "Never use Match client: the host drops back to SDR after a few seconds.",
+      "Turn on Windows HDR. Without it most games hide their HDR option.",
+      "Turn off NVFBC capture. It produces washed-out colors.",
+    ],
+    detailsHeading: "Details",
+    version: "Version",
+    author: "Author",
+    license: "License",
+    repository: "Repository",
+  },
   statusLoading: "Loading...",
   statusUnavailable: "The plugin backend is not reachable.",
   errorPrefix: "Problem: ",
@@ -37,3 +64,9 @@ export const en = {
 };
 
 export type Strings = typeof en;
+
+// What a language file provides: anything left out is taken from English.
+export type LocaleStrings = Partial<Omit<Strings, "errors" | "info">> & {
+  errors?: Record<string, string>;
+  info?: Partial<Strings["info"]>;
+};

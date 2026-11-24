@@ -3,7 +3,10 @@
 // With a capture of the real Steam UI (`yarn capture`) they render the same markup and class names
 // as Steam's own components, so the real Steam CSS styles them. Without a capture they fall back to a
 // rough look made by preview/preview.css (class names starting with "approx-").
-import type { KeyboardEvent, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+
+import { router } from "../router";
 
 import { controls, cx, dialog, real, slider, useFocus } from "./steam";
 
@@ -30,10 +33,20 @@ export function PanelSection({ title, children }: { title?: string; children?: R
   );
 }
 
+// Steam adds "qam-focusable-item" to rows that hold a button; its CSS also hides field labels there.
+const RowContext = createContext<(() => void) | null>(null);
+
 export function PanelSectionRow({ children }: { children?: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
   if (!real) return <div className="approx-row">{children}</div>;
-  // Steam adds "qam-focusable-item" only to button-like rows, and its CSS hides field labels inside them.
-  return <div className={controls("PanelSectionRow")}>{children}</div>;
+  const markFocusable = () => ref.current?.classList.add("qam-focusable-item");
+  return (
+    <RowContext.Provider value={markFocusable}>
+      <div ref={ref} className={controls("PanelSectionRow")}>
+        {children}
+      </div>
+    </RowContext.Provider>
+  );
 }
 
 // --- toggle -----------------------------------------------------------------------------------
@@ -244,3 +257,98 @@ export function SliderField({
     </div>
   );
 }
+
+// --- buttons, navigation and dialog pieces --------------------------------------------------------
+
+interface ButtonItemProps {
+  children?: ReactNode;
+  description?: ReactNode;
+  disabled?: boolean;
+  layout?: "below" | "inline";
+  onClick?(event: MouseEvent | React.MouseEvent): void;
+}
+
+export function ButtonItem({ children, description, disabled, onClick }: ButtonItemProps) {
+  const { focused, bind } = useFocus();
+  const markFocusable = useContext(RowContext);
+  useEffect(() => markFocusable?.(), [markFocusable]);
+
+  if (!real) {
+    return (
+      <div className="approx-field">
+        <button type="button" className="approx-button" disabled={disabled} onClick={onClick}>
+          {children}
+        </button>
+        {description && <div className="approx-desc">{description}</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cx(
+        dialog("Field"),
+        dialog("Classic"),
+        dialog("VerticalAlignCenter"),
+        dialog("WithBottomSeparatorStandard"),
+        dialog("WithChildrenBelow"),
+        dialog("ExtraPaddingOnChildrenBelow"),
+        dialog("StandardPadding"),
+        dialog("HighlightOnFocus"),
+        "Panel",
+        "Focusable",
+        focused && "gpfocuswithin",
+      )}
+      style={{ "--indent-level": 0 } as CSSProperties}
+    >
+      <div className={dialog("FieldLeftColumn")}>
+        <div className={dialog("FieldChildrenWithIcon")}>
+          <div className={dialog("FieldChildrenInner")}>
+            <button
+              type="button"
+              role="button"
+              disabled={disabled}
+              className={cx("DialogButton", "_DialogLayout", "Secondary", dialog("Button"), "Focusable", focused && "gpfocus")}
+              onClick={onClick}
+              {...bind}
+            >
+              {children}
+            </button>
+          </div>
+        </div>
+        {description && <div className={dialog("FieldDescription")}>{description}</div>}
+      </div>
+    </div>
+  );
+}
+
+// A plain focus container; the preview does not model gamepad navigation.
+export function Focusable({ children, style, onCancel }: { children?: ReactNode; style?: CSSProperties; onCancel?(): void }) {
+  return (
+    <div
+      className="Panel Focusable"
+      style={style}
+      tabIndex={-1}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onCancel?.();
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export const Navigation = {
+  Navigate: (path: string) => router.navigate(path),
+  NavigateBack: () => router.back(),
+  NavigateToExternalWeb: (url: string) => {
+    console.info("[preview] would open in Steam's browser:", url);
+    window.open(url, "_blank", "noopener");
+  },
+  CloseSideMenus: () => undefined,
+};
+
+export const DialogBody = ({ children }: { children?: ReactNode }) => <div className="preview-dialog-body">{children}</div>;
+export const DialogControlsSection = ({ children }: { children?: ReactNode }) => <div className="preview-dialog-section">{children}</div>;
+export const DialogControlsSectionHeader = ({ children }: { children?: ReactNode }) => <div className="preview-dialog-header">{children}</div>;
+export const DialogBodyText = ({ children }: { children?: ReactNode }) => <div className="preview-dialog-text">{children}</div>;
