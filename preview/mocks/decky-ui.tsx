@@ -532,14 +532,15 @@ export function DialogButton({ children, style, onClick }: { children?: ReactNod
 export const scrollPanelClasses = { ScrollPanel: real ? scrollClass("ScrollPanel") : "approx-scroll-panel" };
 export const gamepadDialogClasses = { ModalPosition: dialog("ModalPosition"), WithStandardPadding: dialog("WithStandardPadding") };
 
+// Steam's ModalPosition fills the space it is given, which is what makes its scroll panel scroll.
 export function ModalPosition({ children }: { children?: ReactNode }) {
-  return <div className="modal-position-container">{children}</div>;
+  return <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>{children}</div>;
 }
 
 // Steam's scroll group: here simply a scrolling box.
 export const ScrollPanelGroup = forwardRef<HTMLDivElement, { children?: ReactNode; style?: CSSProperties }>(function ScrollPanelGroup({ children, style }, ref) {
   return (
-    <div ref={ref} className={scrollPanelClasses.ScrollPanel} style={{ height: "100%", overflowY: "auto", ...style }}>
+    <div ref={ref} className={scrollPanelClasses.ScrollPanel} style={{ flex: 1, minHeight: 0, overflowY: "auto", ...style }}>
       {children}
     </div>
   );
@@ -554,18 +555,19 @@ interface ConfirmModalMockProps {
   strTitle?: ReactNode;
   strDescription?: ReactNode;
   strOKButtonText?: ReactNode;
+  strCancelButtonText?: ReactNode;
   onOK?: () => void;
   closeModal?: () => void;
 }
 
-export function ConfirmModal({ strTitle, strDescription, strOKButtonText, onOK, closeModal }: ConfirmModalMockProps) {
+export function ConfirmModal({ strTitle, strDescription, strOKButtonText, strCancelButtonText, onOK, closeModal }: ConfirmModalMockProps) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
       <div style={{ background: "#23262e", color: "#fff", padding: "24px", width: "420px", maxWidth: "90vw", borderRadius: "4px", fontSize: "14px" }}>
         <div style={{ fontSize: "18px", marginBottom: "12px" }}>{strTitle}</div>
         <div style={{ marginBottom: "20px", lineHeight: 1.4 }}>{strDescription}</div>
         <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-          <button onClick={() => closeModal?.()}>Cancel</button>
+          <button onClick={() => closeModal?.()}>{strCancelButtonText ?? "Cancel"}</button>
           <button
             onClick={() => {
               onOK?.();

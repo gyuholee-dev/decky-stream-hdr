@@ -26,6 +26,7 @@ function Footer({ onRequest }: { onRequest: (request: Promise<Status>) => void }
         strTitle={strings.resetTitle}
         strDescription={<KeepAll>{strings.resetDescription}</KeepAll>}
         strOKButtonText={strings.resetConfirmButton}
+        strCancelButtonText={strings.cancelButton}
         onOK={() => onRequest(resetSettings())}
       />,
     );

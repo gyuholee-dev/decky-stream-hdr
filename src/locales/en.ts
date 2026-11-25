@@ -34,6 +34,7 @@ export const en = {
     "Sets Paper White, Contrast, Gamma and Saturation back to their defaults, and turns HDR Streaming on. " +
     "While streaming, HDR Streaming and Paper White stay as they are.",
   resetConfirmButton: "Reset",
+  cancelButton: "Cancel",
   // Texts of the info page that the "Plugin Info" button opens.
   info: {
     aboutHeading: "About",

@@ -6,14 +6,13 @@ import type { LocaleStrings } from "./types";
 export const ko: LocaleStrings = {
   hdrToggleDescription: "스팀 스트리밍 시 인코딩 및 렌더링에 HDR 을 적용합니다. 호스트 및 클라이언트 설정은 Info 를 확인하세요.",
   paperWhiteDescription: "HDR 렌더링 시 기준 밝기를 조정합니다. 출력 디스플레이 피크 밝기가 1000 일 경우 230 nits 로 설정하길 권장합니다.",
-  contrastDescription: "출력 화면의 대비를 조정합니다. OLED 디스플레이일 경우 기본값을 권장합니다.",
-  gammaDescription: "출력 화면의 감마를 조정합니다. OLED 디스플레이일 경우 0.85~1.00 으로 설정하길 권장합니다.",
-  saturationDescription: "출력 화면의 채도를 조정합니다. OLED 디스플레이일 경우 125~135% 로 설정하길 권장합니다.",
-  resetTitle: "모든 설정 초기화",
-  resetDescription:
-    "Paper White, Contrast, Gamma, Saturation을 처음 값으로 되돌리고 HDR Streaming을 켭니다. " +
-    "스트리밍 중에는 HDR Streaming과 Paper White는 그대로 둡니다.",
-  resetConfirmButton: "초기화",
+  contrastDescription: "HDR 출력의 대비를 조정합니다. OLED 디스플레이일 경우 기본값을 권장합니다.",
+  gammaDescription: "HDR 출력의 감마를 조정합니다. OLED 디스플레이일 경우 0.85~1.00 으로 설정하길 권장합니다.",
+  saturationDescription: "HDR 출력의 채도를 조정합니다. OLED 디스플레이일 경우 125~135% 로 설정하길 권장합니다.",
+  resetTitle: "Reset All Settings",
+  resetDescription: "모든 설정을 기본 설정값으로 되돌리시겠습니까?",
+  resetConfirmButton: "확인",
+  cancelButton: "취소",
   info: {
     aboutHeading: "소개",
     about:
