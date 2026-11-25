@@ -51,6 +51,7 @@ class Plugin:
             on_streaming=lambda streaming: react(self.controller.on_streaming_changed, streaming),
             on_files_changed=lambda: react(self.controller.maintain),
             on_steam_exit=lambda: react(self.controller.on_steam_exited),
+            delay=self.controller.settle_seconds,
             logger=decky.logger,
         )
         self.controller.steam_running = self.events.steam_running

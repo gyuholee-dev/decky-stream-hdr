@@ -19,6 +19,13 @@ from .settings import Settings
 MAX_RESTORES = 3
 RESTORE_WINDOW_SECONDS = 600.0
 
+# How long the wrapper's files must stay quiet, and how old Steam must be, before the wrapper goes in.
+# When we know the original client was in place as Steam started, Steam's startup check has passed, so a
+# short wait is enough. When the wrapper may have been there at Steam's start (it was left behind by a power
+# cut, say), Steam repairs the client and restarts itself about 25 seconds later, so the wait is longer.
+SETTLE_CLEAN_SECONDS = 5.0
+SETTLE_UNSURE_SECONDS = 30.0
+
 
 class Controller:
     def __init__(
@@ -45,6 +52,7 @@ class Controller:
         self._wrapped_before = False  # we have put the wrapper in place at least once in this run
         self._restores: Deque[float] = deque()  # when Steam put the original back after we had wrapped it
         self._gave_up = False
+        self._clean = False  # the original client was in place when the current Steam started
 
     # -- lifecycle -------------------------------------------------------
 
@@ -57,6 +65,7 @@ class Controller:
         self._clear_stale_look()
         self.apply_paper_white()
         wrapper.set_enabled(self.paths, bool(self.settings.get("hdr_enabled")))
+        self._clean = wrapper.is_elf(self.paths.client)
 
     def stop(self) -> None:
         """Called when the plugin unloads: put Steam's original client and the display back."""
@@ -185,7 +194,12 @@ class Controller:
         except OSError as exc:
             self.log.error("Could not restore the streaming client: %s", exc)
         self._wrapped_before = False  # our own restore is not Steam repairing the file
+        self._clean = wrapper.is_elf(self.paths.client)  # the next Steam starts with the original in place
         self._changed()
+
+    def settle_seconds(self) -> float:
+        """How long to wait before putting the wrapper in (see SETTLE_CLEAN_SECONDS)."""
+        return SETTLE_CLEAN_SECONDS if self._clean else SETTLE_UNSURE_SECONDS
 
     def _steam_restored_original(self) -> bool:
         """True when the original client is back after we had wrapped it: Steam repaired it. Counts it."""

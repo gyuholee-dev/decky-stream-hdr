@@ -3,7 +3,7 @@ import os
 import unittest
 
 from streamhdr import gamescope, look, options, wrapper
-from streamhdr.controller import Controller
+from streamhdr.controller import SETTLE_CLEAN_SECONDS, SETTLE_UNSURE_SECONDS, Controller
 from streamhdr.settings import Settings
 
 from .test_wrapper import ELF_V1, WrapperTestCase
@@ -362,6 +362,20 @@ class MaintainTests(WrapperTestCase):
             controller.on_steam_exited()
             self.now += 25
         self.assertIsNone(controller.status()["error"])
+
+    def test_a_short_wait_when_the_original_was_in_place_at_start(self):
+        wrapper.restore(self.paths)
+        controller = self.make()
+        controller.start()
+        self.assertEqual(controller.settle_seconds(), SETTLE_CLEAN_SECONDS)
+
+    def test_a_long_wait_when_the_wrapper_was_left_behind(self):
+        wrapper.install(self.paths)
+        controller = self.make()
+        controller.start()
+        self.assertEqual(controller.settle_seconds(), SETTLE_UNSURE_SECONDS)
+        controller.on_steam_exited()  # the original is back before the next Steam starts
+        self.assertEqual(controller.settle_seconds(), SETTLE_CLEAN_SECONDS)
 
     def test_the_wrapper_waits_for_steam_to_run(self):
         controller = self.make_with_clock()

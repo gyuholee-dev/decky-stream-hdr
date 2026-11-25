@@ -29,6 +29,8 @@ STEAM_DIR = "steamrt64"
 # 25 seconds after it repairs the client, so this must not be shorter than that. The plugin also puts the
 # original client back whenever Steam ends, so this wait is only a second line of defence.
 QUIET_SECONDS = 30.0
+# While Steam is not running the check repeats, waiting longer each time up to this many seconds.
+MAX_ABSENT_SECONDS = 30.0
 
 IN_ATTRIB = 0x4
 IN_CLOSE_WRITE = 0x8
@@ -190,6 +192,7 @@ class Events:
         proc_root: str = "/proc",
         debounce: float = QUIET_SECONDS,
         age_of: Optional[Callable[[int], Optional[float]]] = None,
+        delay: Optional[Callable[[], float]] = None,
     ):
         self._paths = paths
         self._loop = loop
@@ -200,7 +203,8 @@ class Events:
         self._inotify_factory = inotify_factory
         self._pidfd_open = pidfd_open or getattr(os, "pidfd_open", None)
         self._proc_root = proc_root
-        self._debounce = debounce
+        self._delay = delay or (lambda: debounce)  # how long to wait: the controller may change it
+        self._absent_interval = 0.0  # how long to wait before looking again while Steam is not running
         self._age_of = age_of or (lambda pid: process_age(pid, proc_root))
         self._inotify: Optional[Inotify] = None
         self._tracked_pid: Optional[int] = None
@@ -271,7 +275,7 @@ class Events:
         """Waits for the files to stay quiet: each new event starts the wait again."""
         if self._timer is not None:
             self._timer.cancel()
-        self._timer = self._loop.call_later(self._debounce, self._fire_files_changed)
+        self._timer = self._loop.call_later(self._delay(), self._fire_files_changed)
 
     def _fire_files_changed(self) -> None:
         self._timer = None
@@ -281,15 +285,19 @@ class Events:
             self._timer = self._loop.call_later(remaining + 0.01, self._fire_files_changed)
             return
         self._on_files_changed()
-        if not self._steam_fds:
-            self._schedule_files_changed()  # nothing to repair yet: look again once Steam may be up
+        if self._steam_fds:
+            self._absent_interval = 0.0
+        else:
+            # Nothing to repair yet: look again once Steam may be up, a little less often each time.
+            self._absent_interval = min(self._absent_interval * 2, MAX_ABSENT_SECONDS) or self._delay()
+            self._timer = self._loop.call_later(self._absent_interval, self._fire_files_changed)
 
     def _steam_wait(self) -> float:
         """Seconds until the youngest Steam client process is old enough; 0 when there is none or its age is unknown."""
         ages = [age for age in (self._age_of(pid) for pid in self._steam_fds) if age is not None]
         if not ages:
             return 0.0
-        return max(0.0, self._debounce - min(ages))
+        return max(0.0, self._delay() - min(ages))
 
     # -- the Steam client process ----------------------------------------------
 

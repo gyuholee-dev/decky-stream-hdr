@@ -130,6 +130,7 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
         self.streaming = []
         self.files_changed = []
         self.steam_exits = []
+        self.call_times = []
         self.pipes = {}  # pid -> (read fd, write fd): the read end plays the pidfd, writing to it plays the exit
         self.addCleanup(self.close_pipes)
         self.loop = asyncio.get_running_loop()
@@ -148,18 +149,19 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
         os.write(self.pipes[pid][1], b"x")
         shutil.rmtree(os.path.join(self.proc, str(pid)), ignore_errors=True)  # an ended process has no /proc entry
 
-    def make_events(self, debounce=0.02, age_of=None):
+    def make_events(self, debounce=0.02, age_of=None, delay=None):
         self.events = Events(
             self.paths,
             self.loop,
             on_streaming=self.streaming.append,
-            on_files_changed=lambda: self.files_changed.append(1),
+            on_files_changed=lambda: (self.files_changed.append(1), self.call_times.append(self.loop.time())),
             on_steam_exit=lambda: self.steam_exits.append(1),
             inotify_factory=FakeInotify,
             pidfd_open=self.pidfd_open,
             proc_root=self.proc,
             debounce=debounce,
             age_of=age_of,
+            delay=delay,
         )
         self.addCleanup(self.events.stop)
         return self.events
@@ -252,6 +254,26 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
         await asyncio.sleep(0.12)
         self.assertGreaterEqual(len(self.files_changed), 2)
         self.assertFalse(self.events.steam_running())
+
+    async def test_the_check_waits_longer_each_time_while_steam_is_not_running(self):
+        self.make_events(debounce=0.02).start()
+        self.events.request_check()
+        await asyncio.sleep(0.4)
+        gaps = [b - a for a, b in zip(self.call_times, self.call_times[1:])]
+        self.assertGreaterEqual(len(gaps), 2)
+        self.assertGreater(gaps[1], gaps[0] * 1.5)
+
+    async def test_the_wait_follows_the_delay_function(self):
+        make_proc(self.proc, 820, [STEAM_CLIENT])
+        self.wait = 5.0
+        self.make_events(delay=lambda: self.wait).start()
+        self.events.request_check()
+        await asyncio.sleep(0.1)
+        self.assertEqual(self.files_changed, [])  # still waiting for the long delay
+        self.wait = 0.03  # the controller now says a short wait is enough
+        self.events.request_check()
+        await asyncio.sleep(0.1)
+        self.assertEqual(self.files_changed, [1])
 
     async def test_the_check_stops_repeating_once_steam_is_up(self):
         self.make_events(debounce=0.03).start()
