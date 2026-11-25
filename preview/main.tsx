@@ -1,3 +1,5 @@
+// Must be the first import: it fakes the Steam language setting before the plugin texts are resolved.
+import "./setup";
 import { useState, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -5,7 +7,6 @@ import plugin from "../src/index";
 import { strings } from "../src/strings";
 import { knobs, patchState } from "./backend";
 import { router } from "./router";
-import "./setup";
 import "./preview.css";
 import "./mock_steam.css";
 

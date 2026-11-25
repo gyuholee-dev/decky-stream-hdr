@@ -1,58 +1,80 @@
 // English texts. This is the reference language: every other language is checked against its keys,
 // and any text a language does not provide falls back to the English one.
 //
+// Names of Steam's own options (for example "Use NVFBC capture on NVIDIA GPU") are written exactly as Steam's
+// English interface shows them.
+//
 // Placeholders such as {detail} are replaced with values that cannot be translated, for example
 // the output of a system tool.
 export const en = {
   pluginName: "StreamHDR",
   hdrToggleLabel: "HDR Streaming",
   hdrToggleDescription:
-    "Makes Steam's streaming client request an HDR stream. Takes effect the next time you connect. " +
-    "On the host PC, set Steam's streaming display HDR to Default (or Custom with HDR enabled), " +
-    "never to Match client. Turn on Windows HDR and turn off NVFBC capture.",
+    "Applies HDR to both encoding and rendering when you stream with Steam. See Plugin Info for the host and client settings.",
   paperWhiteLabel: "Paper White",
   paperWhiteDescription:
-    "Sets how bright reference (paper) white is in the stream, in nits. 200-230 is recommended. " +
-    "Takes effect the next time you connect.",
+    "Sets the reference brightness used when rendering HDR. If your display peaks at 1000 nits, 230 nits is recommended.",
   contrastLabel: "Contrast",
-  contrastDescription:
-    "Widens or narrows the difference between dark and bright areas around paper white. 100% leaves the picture unchanged. " +
-    "Applies only while you are streaming.",
+  contrastDescription: "Adjusts the contrast of the HDR output. The default is recommended for OLED displays.",
   gammaLabel: "Gamma",
-  gammaDescription:
-    "Changes the brightness of dark and middle tones while keeping highlights. 1 leaves the picture unchanged; " +
-    "higher values are darker and lower values are brighter. Applies only while you are streaming.",
+  gammaDescription: "Adjusts the gamma of the HDR output. For OLED displays, 0.85-1.00 is recommended.",
   saturationLabel: "Saturation",
-  saturationDescription:
-    "Boosts the color saturation of the HDR stream. 100% leaves colors unchanged and 150% is recommended. " +
-    "Applies only while you are streaming. Very high values can clip strongly colored areas.",
+  saturationDescription: "Adjusts the color saturation of the HDR output. For OLED displays, 125-135% is recommended.",
   infoButton: "Plugin Info",
   githubButton: "GitHub",
   resetButton: "Reset All Settings",
-  resetTitle: "Reset all settings",
-  resetDescription:
-    "Sets Paper White, Contrast, Gamma and Saturation back to their defaults, and turns HDR Streaming on. " +
-    "While streaming, HDR Streaming and Paper White stay as they are.",
+  resetTitle: "Reset All Settings",
+  resetDescription: "Reset all settings to their defaults?",
   resetConfirmButton: "Reset",
   cancelButton: "Cancel",
   // Texts of the info page that the "Plugin Info" button opens.
   info: {
     aboutHeading: "About",
     about:
-      "StreamHDR lets Steam Remote Play deliver real HDR to this device. Steam's Linux streaming client " +
-      "always asks the host for SDR, because SDL cannot detect HDR under X11. This plugin makes the client ask for HDR instead.",
+      "StreamHDR is a Decky plugin that brings BT.2020 PQ HDR streaming to Steam Remote Play. " +
+      "On SteamOS, its derivatives and other Linux devices running Steam in Game Mode, as long as the device can handle HDR streaming, " +
+      "the plugin steps into Steam's streaming process: it changes the HDR encoding request sent to the host and enables HDR rendering output on the client.",
     usageHeading: "Usage",
     usage: [
-      "Turn on HDR Streaming, then connect to your host PC with Remote Play. The setting applies from the next connection.",
-      "Use Saturation to make colors stronger while streaming. 100% leaves colors unchanged and 150% is recommended.",
-      "Both options only affect Remote Play streaming. Local games are not changed.",
+      "Turn on HDR Streaming in the plugin menu, then start Remote Play. If a stream is already running, end it and start it again for the change to take effect.",
+      "Paper White sets the reference brightness of the HDR stream. To change it, end the stream first.",
+      "Contrast, Gamma and Saturation let you tune the HDR picture to your taste. You can change them freely, even while streaming.",
+      "All plugin settings apply to Remote Play only. Games running directly on this device are not affected.",
     ],
-    hostHeading: "Host PC",
+    requirementsHeading: "Requirements",
+    requirements: [
+      "Host PC (the PC that runs the game): An HDR-capable game and monitor, and a PC powerful enough to run HDR games smoothly on its own. " +
+        "Tested with Windows 11, an RTX 50 series GPU and a Samsung OLED monitor.",
+      "Client (this device): A device with a built-in or externally connected HDR display, running SteamOS in Game Mode. " +
+        "Tested with the Lenovo Legion Go 2 OLED running CachyOS Handheld.",
+      "Network: A high-bandwidth, low-latency connection is recommended. Tested over 2.5GbE wired and 5 GHz Wi-Fi.",
+      "The PyroWave Video option, added to Steam in October 2026, is required. (Be sure to turn off Use NVFBC capture on NVIDIA GPU.)",
+    ],
+    hostHeading: "Host Settings",
     host: [
-      "In Steam's Remote Play settings, set Streaming display HDR to Default, or to Custom with HDR enabled. " +
-        "Never use Match client: the host drops back to SDR after a few seconds.",
-      "Turn on Windows HDR. Without it most games hide their HDR option.",
-      "Turn off NVFBC capture. It produces washed-out colors.",
+      "Host PC > Steam Settings > Remote Play > Advanced Host Options",
+      "Enable Advanced Host Options: On",
+      "Primary display while streaming: an HDR-capable display",
+      "Streaming display HDR: Default, or Custom with Custom HDR Enabled turned on",
+      "Use NVFBC capture on NVIDIA GPU: Off",
+      "Enable hardware encoding: On",
+      "Prioritize network traffic: On",
+    ],
+    clientHeading: "Client Settings",
+    client: [
+      "This device > Steam Settings > Remote Play > Advanced Client Options",
+      "Enable Advanced Client Options: On",
+      "Video: Beautiful",
+      "Bandwidth Limit: Unlimited",
+      "Resolution Limit: Display resolution",
+      "Framerate Limit: this device's refresh rate",
+      "HDR: On",
+      "Hardware Decoding: On",
+      "HEVC Video: On",
+      "AV1 Video: Off",
+      "PyroWave Video: On (Quality Modifier 1 or higher)",
+      "Low Latency Networking: On",
+      "This device > Steam Settings > Developer > HDR Compatibility Testing: On",
     ],
     detailsHeading: "Details",
     version: "Version",
@@ -60,24 +82,22 @@ export const en = {
     license: "License",
     repository: "Repository",
   },
-  streamingNotice: "A game is being streamed. HDR Streaming and Paper White cannot be changed while streaming.",
+  streamingNotice: "Steam is streaming. HDR Streaming and Paper White can't be changed while a stream is running.",
   statusLoading: "Loading...",
-  statusUnavailable: "The plugin backend is not reachable.",
-  unknownError: "Something went wrong ({code}).",
+  statusUnavailable: "Can't reach the plugin. Please reload the plugin.",
+  unknownError: "An unknown error occurred. Error code: {code}",
   // Texts for the error codes sent by the backend (py_modules/streamhdr/errors.py).
   errors: {
-    client_not_found: "Steam's streaming client was not found. Start Steam once and try again.",
-    shim_missing: "The bundled injection library is missing from the plugin package.",
-    original_missing:
-      "The wrapper is installed but the original streaming client copy is missing. " +
-      "Restart Steam to restore the original, then reload the plugin.",
-    unknown_format: "Steam's streaming client has an unexpected format, so it was left untouched.",
+    client_not_found: "Couldn't find streaming_client. Make sure Steam is installed in its default location.",
+    shim_missing: "The plugin files are damaged or missing. Please reinstall the plugin.",
+    original_missing: "Couldn't find streaming_client.real. Restart Steam, then reload the plugin.",
+    unknown_format: "streaming_client doesn't have the expected format, so the plugin can't work correctly.",
     file_operation_failed: "File operation failed: {detail}",
-    env_missing: "gamescope's environment file was not found. Is gamescope running?",
-    xprop_missing: "The xprop tool is not installed, so saturation cannot be applied.",
-    xprop_timeout: "xprop timed out while talking to gamescope.",
-    xprop_failed: "xprop failed: {detail}",
-    lut_failed: "Could not create the color table: {detail}",
+    env_missing: "Couldn't find gamescope information. Make sure Steam is running in Game Mode.",
+    xprop_missing: "xprop is not installed, so HDR output settings can't be applied.",
+    xprop_timeout: "Applying the HDR output settings timed out.",
+    xprop_failed: "Couldn't apply the HDR output settings: {detail}",
+    lut_failed: "Couldn't create the LUT file: {detail}",
   } as Record<string, string>,
 };
 
