@@ -99,13 +99,14 @@ class ControllerTests(WrapperTestCase):
         controller.start()
         self.assertTrue(controller.status()["wrapper"]["wrapped"])
 
-    def test_start_with_hdr_off_leaves_client_untouched(self):
+    def test_start_with_hdr_off_still_installs_the_wrapper_but_without_the_flag(self):
         controller = self.make()
         controller.settings.set("hdr_enabled", False)
         controller.start()
-        self.assertFalse(controller.status()["wrapper"]["wrapped"])
-        with open(self.paths.client, "rb") as handle:
-            self.assertEqual(handle.read(), ELF_V1)
+        status = controller.status()
+        self.assertTrue(status["wrapper"]["wrapped"])
+        self.assertFalse(status["wrapper"]["enabled"])
+        self.assertFalse(os.path.exists(self.paths.flag))
 
     def test_problem_is_reported_and_flag_cleared(self):
         os.remove(self.paths.client)
@@ -258,11 +259,13 @@ class MaintainTests(WrapperTestCase):
         with open(self.paths.real, "rb") as handle:
             self.assertEqual(handle.read(), b"\x7fELF-steam-update")
 
-    def test_does_nothing_when_hdr_is_off(self):
+    def test_repairs_the_wrapper_even_when_hdr_is_off(self):
         controller = self.make()
         controller.settings.set("hdr_enabled", False)
         controller.maintain()
-        self.assertFalse(controller.status()["wrapper"]["wrapped"])
+        status = controller.status()
+        self.assertTrue(status["wrapper"]["wrapped"])
+        self.assertFalse(status["wrapper"]["enabled"])
 
     def test_recovers_after_steam_was_not_yet_started(self):
         os.remove(self.paths.client)

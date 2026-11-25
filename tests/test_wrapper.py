@@ -59,12 +59,20 @@ class InstallTests(WrapperTestCase):
         self.assertFalse(os.path.exists(self.paths.real + ".streamhdr-tmp"))
 
     def test_needs_attention_tracks_missing_pieces(self):
-        self.assertTrue(wrapper.needs_attention(self.paths))
+        self.assertTrue(wrapper.needs_attention(self.paths, True))
         wrapper.install(self.paths)
         wrapper.set_enabled(self.paths, True)
-        self.assertFalse(wrapper.needs_attention(self.paths))
+        self.assertFalse(wrapper.needs_attention(self.paths, True))
         os.remove(self.paths.shim)
-        self.assertTrue(wrapper.needs_attention(self.paths))
+        self.assertTrue(wrapper.needs_attention(self.paths, True))
+
+    def test_the_flag_must_match_what_is_wanted(self):
+        wrapper.install(self.paths)
+        wrapper.set_enabled(self.paths, False)
+        self.assertFalse(wrapper.needs_attention(self.paths, False))
+        self.assertTrue(wrapper.needs_attention(self.paths, True))
+        wrapper.set_enabled(self.paths, True)
+        self.assertTrue(wrapper.needs_attention(self.paths, False))
 
     def test_install_is_idempotent(self):
         wrapper.install(self.paths)

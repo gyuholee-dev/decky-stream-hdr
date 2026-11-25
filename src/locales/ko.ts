@@ -1,18 +1,18 @@
 import type { LocaleStrings } from "./types";
 
-// 한국어. 플러그인 이름과 옵션 이름(StreamHDR, HDR streaming, Saturation, Plugin Info, GitHub)은
+// 한국어. 플러그인 이름과 옵션 이름(StreamHDR, HDR Streaming, Saturation, Plugin Info, GitHub)은
 // 영어 그대로 두고, 설명문과 메시지만 번역한다. 읽는 사람은 일반 사용자이므로 개발 용어는 쓰지 않는다.
 // 여기에 없는 문구는 영어로 표시된다.
 export const ko: LocaleStrings = {
-  hdrToggleDescription: "다음 연결부터 HDR로 스트리밍합니다. 필요한 설정은 Plugin Info에서 확인하세요.",
-  paperWhiteDescription: "스트리밍 화면에서 기준이 되는 흰색의 밝기(니트)를 조절합니다. 200~230을 권장하며, 다음 연결부터 적용됩니다.",
-  contrastDescription: "밝은 곳과 어두운 곳의 차이를 조절합니다. 100%는 원래 화면 그대로입니다. 스트리밍하는 동안에만 적용됩니다.",
-  gammaDescription: "어두운 곳과 중간 밝기의 밝기를 조절합니다. 1은 원래 화면 그대로이며, 값이 클수록 어둡고 작을수록 밝아집니다. 스트리밍하는 동안에만 적용됩니다.",
-  saturationDescription: "스트리밍하는 동안 색의 선명함(채도)을 조절합니다. 100%는 원래 색 그대로이며, 150%를 권장합니다.",
+  hdrToggleDescription: "스팀 스트리밍 시 인코딩 및 렌더링에 HDR 을 적용합니다. 호스트 및 클라이언트 설정은 Info 를 확인하세요.",
+  paperWhiteDescription: "HDR 렌더링 시 기준 밝기를 조정합니다. 출력 디스플레이 피크 밝기가 1000 일 경우 230 nits 로 설정하길 권장합니다.",
+  contrastDescription: "출력 화면의 대비를 조정합니다. OLED 디스플레이일 경우 기본값을 권장합니다.",
+  gammaDescription: "출력 화면의 감마를 조정합니다. OLED 디스플레이일 경우 0.85~1.00 으로 설정하길 권장합니다.",
+  saturationDescription: "출력 화면의 채도를 조정합니다. OLED 디스플레이일 경우 125~135% 로 설정하길 권장합니다.",
   resetTitle: "모든 설정 초기화",
   resetDescription:
-    "Paper White, Contrast, Gamma, Saturation을 처음 값으로 되돌리고 HDR streaming을 켭니다. " +
-    "스트리밍 중에는 HDR streaming과 Paper White는 그대로 둡니다.",
+    "Paper White, Contrast, Gamma, Saturation을 처음 값으로 되돌리고 HDR Streaming을 켭니다. " +
+    "스트리밍 중에는 HDR Streaming과 Paper White는 그대로 둡니다.",
   resetConfirmButton: "초기화",
   info: {
     aboutHeading: "소개",
@@ -23,7 +23,7 @@ export const ko: LocaleStrings = {
       "이 플러그인은 Steam이 HDR 화면을 보내 달라고 요청하게 만들며, 그 밖의 동작은 바꾸지 않습니다.",
     usageHeading: "사용 방법",
     usage: [
-      "HDR streaming을 켠 뒤 Remote Play로 호스트 PC에 연결하세요. 이미 연결되어 있다면 다시 연결해야 적용됩니다.",
+      "HDR Streaming을 켠 뒤 Remote Play로 호스트 PC에 연결하세요. 이미 연결되어 있다면 다시 연결해야 적용됩니다.",
       "게임 안에서 HDR 옵션을 끄면 화면이 일반(SDR) 화질로 바뀌고, 다시 켜면 HDR로 돌아옵니다. " +
         "HDR을 지원하지 않는 게임은 이 옵션을 켜 두어도 화면이 달라지지 않습니다.",
       "Saturation은 HDR 화면의 색이 일반 화면보다 조금 연하게 느껴질 때 쓰는 옵션입니다. 0~200% 범위에서 조절하며, " +
@@ -83,6 +83,7 @@ export const ko: LocaleStrings = {
     license: "라이선스",
     repository: "저장소",
   },
+  streamingNotice: "스팀이 스트리밍 중입니다. 스트리밍 중에는 HDR 및 페이퍼 화이트 설정을 변경할 수 없습니다.",
   statusLoading: "불러오는 중...",
   statusUnavailable: "플러그인에 연결할 수 없습니다. 플러그인을 다시 불러와 보세요.",
   errorPrefix: "문제: ",

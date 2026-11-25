@@ -96,14 +96,16 @@ class Controller:
     # -- HDR toggle ------------------------------------------------------
 
     def apply_hdr(self, enabled: bool) -> None:
-        """Bring the wrapper and flag file in line with `enabled`, recording any problem."""
+        """Bring the wrapper and the flag file in line with `enabled`, recording any problem.
+
+        The wrapper is installed whether or not HDR is wanted: it tells the plugin when a stream starts, which
+        the panel needs to lock the options and show the badge. Only the flag decides if it injects HDR."""
         self.error = None
         try:
-            if enabled:
-                self.apply_paper_white()  # the injected library reads it; it may have been removed
-                result = wrapper.install(self.paths)
-                if result != "ok":
-                    self.log.info("Streaming client wrapper %s", result)
+            self.apply_paper_white()  # the injected library reads it; it may have been removed
+            result = wrapper.install(self.paths)
+            if result != "ok":
+                self.log.info("Streaming client wrapper %s", result)
             wrapper.set_enabled(self.paths, enabled)
         except wrapper.WrapperError as exc:
             self.error = exc.info()
@@ -140,9 +142,10 @@ class Controller:
 
     def maintain(self) -> None:
         """Called when a file the wrapper relies on changed: Steam may have restored its own client."""
-        if self.settings.get("hdr_enabled") and wrapper.needs_attention(self.paths):
+        enabled = self.settings.get("hdr_enabled")
+        if wrapper.needs_attention(self.paths, enabled):
             previous = self.error
-            self.apply_hdr(True)
+            self.apply_hdr(enabled)
             if self.error is None and previous is None:
                 self.log.info("Reinstalled the streaming client wrapper")
         self._changed()

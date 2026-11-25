@@ -5,7 +5,7 @@
 // the output of a system tool.
 export const en = {
   pluginName: "StreamHDR",
-  hdrToggleLabel: "HDR streaming",
+  hdrToggleLabel: "HDR Streaming",
   hdrToggleDescription:
     "Makes Steam's streaming client request an HDR stream. Takes effect the next time you connect. " +
     "On the host PC, set Steam's streaming display HDR to Default (or Custom with HDR enabled), " +
@@ -31,8 +31,8 @@ export const en = {
   resetButton: "Reset All Settings",
   resetTitle: "Reset all settings",
   resetDescription:
-    "Sets Paper White, Contrast, Gamma and Saturation back to their defaults, and turns HDR streaming on. " +
-    "While streaming, HDR streaming and Paper White stay as they are.",
+    "Sets Paper White, Contrast, Gamma and Saturation back to their defaults, and turns HDR Streaming on. " +
+    "While streaming, HDR Streaming and Paper White stay as they are.",
   resetConfirmButton: "Reset",
   // Texts of the info page that the "Plugin Info" button opens.
   info: {
@@ -42,7 +42,7 @@ export const en = {
       "always asks the host for SDR, because SDL cannot detect HDR under X11. This plugin makes the client ask for HDR instead.",
     usageHeading: "Usage",
     usage: [
-      "Turn on HDR streaming, then connect to your host PC with Remote Play. The setting applies from the next connection.",
+      "Turn on HDR Streaming, then connect to your host PC with Remote Play. The setting applies from the next connection.",
       "Use Saturation to make colors stronger while streaming. 100% leaves colors unchanged and 150% is recommended.",
       "Both options only affect Remote Play streaming. Local games are not changed.",
     ],
@@ -59,6 +59,7 @@ export const en = {
     license: "License",
     repository: "Repository",
   },
+  streamingNotice: "A game is being streamed. HDR Streaming and Paper White cannot be changed while streaming.",
   statusLoading: "Loading...",
   statusUnavailable: "The plugin backend is not reachable.",
   errorPrefix: "Problem: ",

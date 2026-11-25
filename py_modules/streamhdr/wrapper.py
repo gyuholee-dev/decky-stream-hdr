@@ -106,13 +106,16 @@ def _keep_original(paths: Paths) -> None:
     os.replace(tmp, paths.real)
 
 
-def needs_attention(paths: Paths) -> bool:
-    """Cheap check, run when a file the wrapper relies on changed: has anything gone missing?"""
+def needs_attention(paths: Paths, enabled: bool) -> bool:
+    """Cheap check, run when a file the wrapper relies on changed: is anything missing or out of line?
+
+    The wrapper stays installed whether or not HDR is wanted (it reports when a stream starts); the
+    flag file is what tells it to inject HDR, so the flag must exist exactly when `enabled`."""
     return not (
         is_wrapper(paths.client)
         and os.path.isfile(paths.real)
         and os.path.isfile(paths.shim)
-        and os.path.isfile(paths.flag)
+        and os.path.isfile(paths.flag) == enabled
     )
 
 

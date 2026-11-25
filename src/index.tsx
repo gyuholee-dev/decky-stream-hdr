@@ -7,9 +7,10 @@ import { TitleView } from "./header";
 import { InfoIcon, StreamIcon } from "./icon";
 import { infoRoute, InfoPage } from "./info-page";
 import { KeepAll } from "./keep-all";
+import { Notice, NoticeTone } from "./notice";
 import { OptionSlider, OptionToggle } from "./option-fields";
 import { useStatus } from "./status";
-import { errorText, strings } from "./strings";
+import { ErrorInfo, errorText, strings } from "./strings";
 
 // Steam scrolls a focused row into view only until its top edge shows, which leaves the last rows half
 // hidden behind the bottom bar. Keeping this much space clear below a focused row fixes that.
@@ -54,11 +55,11 @@ function Footer({ onRequest }: { onRequest: (request: Promise<Status>) => void }
   );
 }
 
-function Message({ text }: { text: string }) {
+function Message({ text, tone }: { text: string; tone: NoticeTone }) {
   return (
     <PanelSection>
       <PanelSectionRow>
-        <KeepAll>{text}</KeepAll>
+        <Notice tone={tone}>{text}</Notice>
       </PanelSectionRow>
     </PanelSection>
   );
@@ -67,28 +68,32 @@ function Message({ text }: { text: string }) {
 function Panel() {
   const { status, failed, send, change } = useStatus();
 
-  if (failed) return <Message text={strings.statusUnavailable} />;
-  if (!status) return <Message text={strings.statusLoading} />;
+  if (failed) return <Message tone="error" text={strings.statusUnavailable} />;
+  if (!status) return <Message tone="info" text={strings.statusLoading} />;
 
   const field = { status, change };
-  const problem = (error: Status["error"]) =>
-    error && (
-      <PanelSectionRow>
-        <KeepAll>{strings.errorPrefix + errorText(error)}</KeepAll>
-      </PanelSectionRow>
-    );
+  // Problems come first, right under the header, each in its own red box; while a stream runs a blue box says
+  // why two of the options cannot be changed.
+  const problems = [status.error, status.paper_white_error, status.look_error].filter((error): error is ErrorInfo => error !== null);
 
   return (
     <>
       <PanelSection>
+        {problems.map((error, index) => (
+          <PanelSectionRow key={index}>
+            <Notice tone="error">{strings.errorPrefix + errorText(error)}</Notice>
+          </PanelSectionRow>
+        ))}
+        {status.streaming && (
+          <PanelSectionRow>
+            <Notice tone="info">{strings.streamingNotice}</Notice>
+          </PanelSectionRow>
+        )}
         <OptionToggle {...field} label={strings.hdrToggleLabel} description={strings.hdrToggleDescription} />
-        {problem(status.error)}
         <OptionSlider {...field} name="paper_white" suffix=" nits" label={strings.paperWhiteLabel} description={strings.paperWhiteDescription} />
-        {problem(status.paper_white_error)}
         <OptionSlider {...field} name="contrast" suffix="%" label={strings.contrastLabel} description={strings.contrastDescription} />
         <OptionSlider {...field} name="gamma" label={strings.gammaLabel} description={strings.gammaDescription} />
         <OptionSlider {...field} name="saturation" suffix="%" label={strings.saturationLabel} description={strings.saturationDescription} />
-        {problem(status.look_error)}
         <Footer onRequest={send} />
       </PanelSection>
     </>
