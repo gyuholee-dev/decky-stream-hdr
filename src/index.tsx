@@ -84,7 +84,7 @@ function Panel() {
       <PanelSection>
         {problems.map((error, index) => (
           <PanelSectionRow key={index}>
-            <Notice tone="error">{strings.errorPrefix + errorText(error)}</Notice>
+            <Notice tone="error">{errorText(error)}</Notice>
           </PanelSectionRow>
         ))}
         {status.streaming && (

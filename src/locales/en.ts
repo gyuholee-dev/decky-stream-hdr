@@ -63,7 +63,6 @@ export const en = {
   streamingNotice: "A game is being streamed. HDR Streaming and Paper White cannot be changed while streaming.",
   statusLoading: "Loading...",
   statusUnavailable: "The plugin backend is not reachable.",
-  errorPrefix: "Problem: ",
   unknownError: "Something went wrong ({code}).",
   // Texts for the error codes sent by the backend (py_modules/streamhdr/errors.py).
   errors: {
@@ -75,7 +74,6 @@ export const en = {
     unknown_format: "Steam's streaming client has an unexpected format, so it was left untouched.",
     file_operation_failed: "File operation failed: {detail}",
     env_missing: "gamescope's environment file was not found. Is gamescope running?",
-    env_no_display: "gamescope's environment file has no DISPLAY entry.",
     xprop_missing: "The xprop tool is not installed, so saturation cannot be applied.",
     xprop_timeout: "xprop timed out while talking to gamescope.",
     xprop_failed: "xprop failed: {detail}",

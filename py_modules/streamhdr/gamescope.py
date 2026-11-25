@@ -49,7 +49,7 @@ def read_environment(path: str) -> Dict[str, str]:
     except OSError:
         raise GamescopeError("env_missing", "gamescope's environment file was not found. Is gamescope running?")
     if "DISPLAY" not in env:
-        raise GamescopeError("env_no_display", "gamescope's environment file has no DISPLAY entry.")
+        raise GamescopeError("env_missing", "gamescope's environment file has no DISPLAY entry.")
     return env
 
 
