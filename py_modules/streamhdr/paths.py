@@ -8,6 +8,7 @@ from typing import Optional
 DATA_DIR_NAME = "decky-stream-hdr"
 SHIM_NAME = "sdl_hdr_shim.so"
 FLAG_NAME = "enabled"
+PAPER_WHITE_NAME = "paper_white"
 TEMPLATE_NAME = "streaming_client.sh.tmpl"
 
 # Where Steam keeps its files, in the order they are tried. The first is the usual place (SteamOS and
@@ -35,6 +36,7 @@ class Paths:
     data_dir: str
     shim: str
     flag: str
+    paper_white: str
     luts_dir: str
     # gamescope's environment file, which tells us how to reach its X server.
     gamescope_env: str
@@ -53,6 +55,7 @@ class Paths:
             data_dir=data_dir,
             shim=os.path.join(data_dir, SHIM_NAME),
             flag=os.path.join(data_dir, FLAG_NAME),
+            paper_white=os.path.join(data_dir, PAPER_WHITE_NAME),
             luts_dir=os.path.join(data_dir, "luts"),
             gamescope_env="/run/user/%d/gamescope-environment" % uid,
             shim_src=os.path.join(plugin_dir, "bin", SHIM_NAME),

@@ -8,6 +8,7 @@ from typing import Any, Dict
 DEFAULTS: Dict[str, Any] = {
     "hdr_enabled": False,
     "saturation": 100,  # percent; 100 means no change
+    "paper_white": 200,  # nits
 }
 
 

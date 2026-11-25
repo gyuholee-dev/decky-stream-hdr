@@ -2,11 +2,16 @@ import { Field, Navigation, PanelSection, PanelSectionRow, SliderField, ToggleFi
 import { definePlugin, routerHook } from "@decky/api";
 import { ReactNode, useEffect, useState } from "react";
 
-import { getStatus, setHdrEnabled, setSaturation, Status } from "./api";
+import { getStatus, setHdrEnabled, setPaperWhite, setSaturation, Status } from "./api";
 import { TitleView } from "./header";
 import { InfoIcon, StreamIcon } from "./icon";
 import { infoRoute, InfoPage } from "./info-page";
 import { errorText, strings } from "./strings";
+
+const PAPER_WHITE_MIN = 80;
+const PAPER_WHITE_MAX = 480;
+const PAPER_WHITE_STEP = 10;
+const PAPER_WHITE_DEFAULT = 200;
 
 const SATURATION_MIN = 0;
 const SATURATION_MAX = 200;
@@ -84,6 +89,30 @@ function Content() {
         {status.error && (
           <PanelSectionRow>
             <KeepAll>{strings.errorPrefix + errorText(status.error)}</KeepAll>
+          </PanelSectionRow>
+        )}
+        <PanelSectionRow>
+          <SliderField
+            label={strings.paperWhiteLabel}
+            description={<KeepAll>{strings.paperWhiteDescription}</KeepAll>}
+            value={status.paper_white}
+            min={PAPER_WHITE_MIN}
+            max={PAPER_WHITE_MAX}
+            step={PAPER_WHITE_STEP}
+            resetValue={PAPER_WHITE_DEFAULT}
+            showValue
+            valueSuffix=" nits"
+            onChange={(nits: number) => {
+              setStatus({ ...status, paper_white: nits });
+              setPaperWhite(nits)
+                .then(setStatus)
+                .catch(() => setFailed(true));
+            }}
+          />
+        </PanelSectionRow>
+        {status.paper_white_error && (
+          <PanelSectionRow>
+            <KeepAll>{strings.errorPrefix + errorText(status.paper_white_error)}</KeepAll>
           </PanelSectionRow>
         )}
         <PanelSectionRow>

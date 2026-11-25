@@ -14,13 +14,16 @@ export interface Status {
   hdr_enabled: boolean;
   hdr_active: boolean;
   saturation: number;
+  paper_white: number;
   streaming: boolean;
   wrapper: WrapperStatus;
   error: ErrorInfo | null;
   saturation_error: ErrorInfo | null;
+  paper_white_error: ErrorInfo | null;
 }
 
 // Thin wrappers around backend methods defined in main.py.
 export const getStatus = callable<[], Status>("get_status");
 export const setHdrEnabled = callable<[enabled: boolean], Status>("set_hdr_enabled");
 export const setSaturation = callable<[percent: number], Status>("set_saturation");
+export const setPaperWhite = callable<[nits: number], Status>("set_paper_white");

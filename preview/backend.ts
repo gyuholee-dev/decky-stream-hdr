@@ -5,6 +5,7 @@ export interface PreviewStatus {
   hdr_enabled: boolean;
   hdr_active: boolean;
   saturation: number;
+  paper_white: number;
   streaming: boolean;
   wrapper: {
     client_found: boolean;
@@ -15,6 +16,7 @@ export interface PreviewStatus {
   };
   error: { code: string; detail: string | null } | null;
   saturation_error: { code: string; detail: string | null } | null;
+  paper_white_error: { code: string; detail: string | null } | null;
 }
 
 export const knobs = {
@@ -26,6 +28,7 @@ const state: PreviewStatus = {
   hdr_enabled: false,
   hdr_active: false,
   saturation: 100,
+  paper_white: 200,
   streaming: false,
   wrapper: {
     client_found: true,
@@ -36,6 +39,7 @@ const state: PreviewStatus = {
   },
   error: null,
   saturation_error: null,
+  paper_white_error: null,
 };
 
 export function patchState(patch: Partial<PreviewStatus>) {
@@ -43,6 +47,8 @@ export function patchState(patch: Partial<PreviewStatus>) {
 }
 
 const snapPercent = (value: number) => Math.max(0, Math.min(200, Math.round(value / 10) * 10));
+
+const snapNits = (value: number) => Math.max(80, Math.min(480, Math.round(value / 10) * 10));
 
 const handlers: Record<string, (...args: any[]) => PreviewStatus> = {
   get_status: () => ({ ...state, hdr_active: state.streaming && state.hdr_enabled, wrapper: { ...state.wrapper } }),
@@ -55,6 +61,10 @@ const handlers: Record<string, (...args: any[]) => PreviewStatus> = {
       shim_installed: enabled || state.wrapper.shim_installed,
       enabled,
     };
+    return handlers.get_status();
+  },
+  set_paper_white: (nits: number) => {
+    state.paper_white = snapNits(nits);
     return handlers.get_status();
   },
   set_saturation: (percent: number) => {

@@ -6,7 +6,7 @@ import os
 import shutil
 from typing import Any, Dict, Optional
 
-from . import gamescope, saturation, wrapper
+from . import gamescope, paperwhite, saturation, wrapper
 from .errors import info_for
 from .paths import Paths
 from .settings import Settings
@@ -26,6 +26,7 @@ class Controller:
         self.gs = gamescope_api
         self.error: Optional[Dict[str, Any]] = None
         self.saturation_error: Optional[Dict[str, Any]] = None
+        self.paper_white_error: Optional[Dict[str, Any]] = None
         self.streaming = False
         self._look_applied = False  # True while the saturation LUT atom is set by us
 
@@ -34,6 +35,7 @@ class Controller:
     def start(self) -> None:
         """Called when the plugin backend loads: make everything match the saved settings."""
         self._clear_stale_look()
+        self.apply_paper_white()
         self.apply_hdr(self.settings.get("hdr_enabled"))
 
     def stop(self) -> None:
@@ -50,6 +52,8 @@ class Controller:
         try:
             wrapper.uninstall(self.paths)
             shutil.rmtree(self.paths.luts_dir, ignore_errors=True)
+            if os.path.exists(self.paths.paper_white):
+                os.remove(self.paths.paper_white)
             try:
                 os.rmdir(self.paths.data_dir)  # only removes the folder when nothing else is in it
             except OSError:
@@ -81,6 +85,22 @@ class Controller:
         self.settings.set("hdr_enabled", bool(enabled))
         self.apply_hdr(bool(enabled))
         return self.status()
+
+    # -- paper white -----------------------------------------------------
+
+    def set_paper_white(self, nits: int) -> Dict[str, Any]:
+        self.settings.set("paper_white", paperwhite.clamp_nits(int(nits)))
+        self.apply_paper_white()
+        return self.status()
+
+    def apply_paper_white(self) -> None:
+        """Write the saved paper white where the injected library reads it."""
+        self.paper_white_error = None
+        try:
+            paperwhite.write_file(self.paths.paper_white, self.settings.get("paper_white"))
+        except OSError as exc:
+            self.paper_white_error = info_for("file_operation_failed", str(exc))
+            self.log.error("Could not save the paper white: %s", exc)
 
     # -- periodic maintenance --------------------------------------------
 
@@ -187,8 +207,10 @@ class Controller:
             "hdr_enabled": hdr_enabled,
             "hdr_active": hdr_active,
             "saturation": self.settings.get("saturation"),
+            "paper_white": self.settings.get("paper_white"),
             "streaming": self.streaming,
             "wrapper": wrapper_state,
             "error": self.error,
             "saturation_error": self.saturation_error,
+            "paper_white_error": self.paper_white_error,
         }

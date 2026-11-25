@@ -5,6 +5,11 @@
  * (SDL.display.HDR_enabled). Under X11 SDL always answers "no", so the client
  * requests an SDR stream. Preloading this library makes that one query answer
  * "yes"; every other property lookup is forwarded to the real SDL.
+ *
+ * It also sets the paper white of the renderer. Under X11 SDL leaves the window property
+ * SDL.window.SDR_white_level at 1.0 (80 nits), which draws the whole stream about three times
+ * darker than the host sends it. The wanted paper white, in nits, is read from the file
+ * paper_white in the plugin data folder just before the renderer is created.
  */
 #define _GNU_SOURCE
 #include <dlfcn.h>
@@ -31,75 +36,52 @@ bool SDL_GetBooleanProperty(SDL_PropertiesID properties, const char *name, bool 
     return real_get_boolean_property ? real_get_boolean_property(properties, name, default_value) : default_value;
 }
 
-/*
- * EXPERIMENT (temporary): raise the renderer's SDR white reference.
- *
- * Under X11 SDL leaves SDL.window.SDR_white_level at its default (1.0 = 80 nits), so the stream is
- * rendered darker than the host sends it. If the file ~/.local/share/decky-stream-hdr/sdr_white
- * exists and holds a number, that number is written to the window property just before the
- * renderer is created. The same file enables a small log (shim.log) of the SDL calls involved.
- * Without the file nothing changes.
- */
+
+#define SDL_REFERENCE_WHITE_NITS 80.0f /* SDL counts white levels in units of 80 nits */
+#define PAPER_WHITE_DEFAULT_NITS 200.0f
+#define PAPER_WHITE_MIN_NITS 80.0f
+#define PAPER_WHITE_MAX_NITS 480.0f
+
 typedef struct SDL_Window SDL_Window;
 typedef struct SDL_Renderer SDL_Renderer;
 typedef bool (*SetFloatPropertyFunction)(SDL_PropertiesID, const char *, float);
-typedef float (*GetFloatPropertyFunction)(SDL_PropertiesID, const char *, float);
 typedef SDL_PropertiesID (*GetWindowPropertiesFunction)(SDL_Window *);
 typedef void *(*GetPointerPropertyFunction)(SDL_PropertiesID, const char *, void *);
 typedef SDL_Renderer *(*CreateRendererFunction)(SDL_Window *, const char *);
 typedef SDL_Renderer *(*CreateRendererWithPropertiesFunction)(SDL_PropertiesID);
 
-static float experiment_white(void) {
+/* Paper white in nits: the value saved by the plugin, or the default when the file is missing or invalid. */
+static float paper_white_nits(void) {
     const char *home = getenv("HOME");
+    if (!home) return PAPER_WHITE_DEFAULT_NITS;
     char path[512];
-    if (!home) return 0.0f;
-    snprintf(path, sizeof path, "%s/.local/share/decky-stream-hdr/sdr_white", home);
+    snprintf(path, sizeof path, "%s/.local/share/decky-stream-hdr/paper_white", home);
     FILE *file = fopen(path, "r");
-    if (!file) return 0.0f;
-    float value = 0.0f;
-    if (fscanf(file, "%f", &value) != 1) value = 0.0f;
+    if (!file) return PAPER_WHITE_DEFAULT_NITS;
+    float nits = 0.0f;
+    int read = fscanf(file, "%f", &nits);
     fclose(file);
-    return value;
+    if (read != 1 || nits < PAPER_WHITE_MIN_NITS || nits > PAPER_WHITE_MAX_NITS) return PAPER_WHITE_DEFAULT_NITS;
+    return nits;
 }
 
-static void experiment_log(const char *format, const char *text, double number) {
-    const char *home = getenv("HOME");
-    char path[512];
-    if (!home) return;
-    snprintf(path, sizeof path, "%s/.local/share/decky-stream-hdr/shim.log", home);
-    FILE *file = fopen(path, "a");
-    if (!file) return;
-    fprintf(file, format, text, number);
-    fputc('\n', file);
-    fclose(file);
-}
-
-static void experiment_apply(SDL_Window *window, const char *origin) {
-    float white = experiment_white();
-    if (white <= 0.0f || !window) return;
+static void apply_paper_white(SDL_Window *window) {
+    if (!window) return;
     GetWindowPropertiesFunction get_window_properties = (GetWindowPropertiesFunction)dlsym(RTLD_NEXT, "SDL_GetWindowProperties");
-    SetFloatPropertyFunction set_float = (SetFloatPropertyFunction)dlsym(RTLD_NEXT, "SDL_SetFloatProperty");
-    if (!get_window_properties || !set_float) return;
-    set_float(get_window_properties(window), "SDL.window.SDR_white_level", white);
-    experiment_log("%s: window SDR_white_level set to %f", origin, white);
+    SetFloatPropertyFunction set_float_property = (SetFloatPropertyFunction)dlsym(RTLD_NEXT, "SDL_SetFloatProperty");
+    if (!get_window_properties || !set_float_property) return;
+    set_float_property(get_window_properties(window), "SDL.window.SDR_white_level", paper_white_nits() / SDL_REFERENCE_WHITE_NITS);
 }
 
 SDL_Renderer *SDL_CreateRenderer(SDL_Window *window, const char *name) {
-    experiment_apply(window, "SDL_CreateRenderer");
+    apply_paper_white(window);
     CreateRendererFunction real = (CreateRendererFunction)dlsym(RTLD_NEXT, "SDL_CreateRenderer");
     return real ? real(window, name) : NULL;
 }
 
 SDL_Renderer *SDL_CreateRendererWithProperties(SDL_PropertiesID props) {
-    GetPointerPropertyFunction get_pointer = (GetPointerPropertyFunction)dlsym(RTLD_NEXT, "SDL_GetPointerProperty");
-    if (get_pointer) experiment_apply((SDL_Window *)get_pointer(props, "SDL.renderer.create.window", NULL), "SDL_CreateRendererWithProperties");
+    GetPointerPropertyFunction get_pointer_property = (GetPointerPropertyFunction)dlsym(RTLD_NEXT, "SDL_GetPointerProperty");
+    if (get_pointer_property) apply_paper_white((SDL_Window *)get_pointer_property(props, "SDL.renderer.create.window", NULL));
     CreateRendererWithPropertiesFunction real = (CreateRendererWithPropertiesFunction)dlsym(RTLD_NEXT, "SDL_CreateRendererWithProperties");
     return real ? real(props) : NULL;
-}
-
-bool SDL_SetFloatProperty(SDL_PropertiesID properties, const char *name, float value) {
-    if (name && experiment_white() > 0.0f && (strstr(name, "white") || strstr(name, "headroom") || strstr(name, "SDR")))
-        experiment_log("SDL_SetFloatProperty %s = %f", name, value);
-    SetFloatPropertyFunction real = (SetFloatPropertyFunction)dlsym(RTLD_NEXT, "SDL_SetFloatProperty");
-    return real ? real(properties, name, value) : false;
 }

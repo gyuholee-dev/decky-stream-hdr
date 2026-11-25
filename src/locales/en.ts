@@ -10,6 +10,10 @@ export const en = {
     "Makes Steam's streaming client request an HDR stream. Takes effect the next time you connect. " +
     "On the host PC, set Steam's streaming display HDR to Default (or Custom with HDR enabled), " +
     "never to Match client. Turn on Windows HDR and turn off NVFBC capture.",
+  paperWhiteLabel: "Paper White",
+  paperWhiteDescription:
+    "Sets how bright reference (paper) white is in the stream, in nits. 200-230 is recommended. " +
+    "Takes effect the next time you connect.",
   saturationLabel: "Saturation",
   saturationDescription:
     "Boosts the color saturation of the HDR stream. 100% leaves colors unchanged and 150% is recommended. " +

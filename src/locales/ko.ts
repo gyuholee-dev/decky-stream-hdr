@@ -5,6 +5,7 @@ import type { LocaleStrings } from "./types";
 // 여기에 없는 문구는 영어로 표시된다.
 export const ko: LocaleStrings = {
   hdrToggleDescription: "다음 연결부터 HDR로 스트리밍합니다. 필요한 설정은 Plugin Info에서 확인하세요.",
+  paperWhiteDescription: "스트리밍 화면에서 기준이 되는 흰색의 밝기(니트)를 조절합니다. 200~230을 권장하며, 다음 연결부터 적용됩니다.",
   saturationDescription: "스트리밍하는 동안 색의 선명함(채도)을 조절합니다. 100%는 원래 색 그대로이며, 150%를 권장합니다.",
   info: {
     aboutHeading: "소개",
