@@ -200,6 +200,36 @@ class WrapperScriptTests(WrapperTestCase):
         wrapper.set_enabled(self.paths, True)
         self.assertEqual(self.run_wrapper("/other.so"), "PRELOAD=%s:/other.so ARGS=--a b" % self.paths.shim)
 
+    def test_the_start_event_carries_the_pid_of_the_client(self):
+        wrapper.install(self.paths)
+        with open(self.paths.real, "w") as handle:
+            handle.write('#!/bin/sh\necho "PID=$$"\n')
+        os.chmod(self.paths.real, 0o755)
+        result = subprocess.run([self.paths.client], capture_output=True, text=True)
+        client_pid = result.stdout.strip().split("=")[1]
+        with open(self.paths.stream_event) as handle:
+            self.assertEqual(handle.read(), "start %s\n" % client_pid)
+
+    def test_a_failing_event_write_does_not_stop_the_client(self):
+        wrapper.install(self.paths)
+        os.remove(self.paths.stream_event) if os.path.exists(self.paths.stream_event) else None
+        shutil.rmtree(self.paths.data_dir)  # the event file can no longer be written
+        with open(self.paths.real, "w") as handle:
+            handle.write('#!/bin/sh\necho started\n')
+        os.chmod(self.paths.real, 0o755)
+        result = subprocess.run([self.paths.client], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.strip(), "started")
+        self.assertEqual(result.stderr, "")
+
+    def test_an_older_wrapper_is_still_recognised_and_updated(self):
+        wrapper.install(self.paths)
+        old = self.read(self.paths.client).decode().replace("streamhdr-wrapper v2", "streamhdr-wrapper v1")
+        with open(self.paths.client, "w") as handle:
+            handle.write(old)
+        self.assertTrue(wrapper.is_wrapper(self.paths.client))
+        self.assertEqual(wrapper.install(self.paths), "updated")
+
     def test_missing_shim_file_skips_preload(self):
         wrapper.set_enabled(self.paths, True)
         out = self.run_wrapper()

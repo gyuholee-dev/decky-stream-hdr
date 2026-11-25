@@ -73,9 +73,9 @@ function Preview() {
             type="checkbox"
             checked={streaming}
             onChange={(event) => {
+              // Like a real stream starting: the panel is not reopened, it hears about it as an event.
               patchState({ streaming: event.target.checked });
               setStreaming(event.target.checked);
-              remount();
             }}
           />
           Streaming now

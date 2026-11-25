@@ -1,11 +1,15 @@
 #!/bin/sh
-# streamhdr-wrapper v1
+# streamhdr-wrapper v2
 # Installed by the StreamHDR Decky plugin in place of Steam's streaming_client.
 # The original binary is kept next to this file as streaming_client.real.
-# The __SHIM__ and __FLAG__ placeholders are replaced with absolute paths at install time.
+# The __SHIM__, __FLAG__ and __EVENT__ placeholders are replaced with absolute paths at install time.
 SHIM="__SHIM__"
 FLAG="__FLAG__"
+EVENT="__EVENT__"
 if [ -f "$FLAG" ] && [ -f "$SHIM" ]; then
     export LD_PRELOAD="$SHIM${LD_PRELOAD:+:$LD_PRELOAD}"
 fi
+# Tell the plugin a stream is starting. After exec this process becomes the client, so $$ is its pid.
+# A failure here must never keep the client from starting.
+{ printf 'start %s\n' "$$" > "$EVENT"; } 2>/dev/null || true
 exec "$(dirname "$0")/streaming_client.real" "$@"

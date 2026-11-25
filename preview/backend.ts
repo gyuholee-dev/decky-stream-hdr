@@ -46,8 +46,18 @@ const state: PreviewStatus = {
   paper_white_error: null,
 };
 
+const listeners = new Set<(status: PreviewStatus) => void>();
+
+// Like the real backend's "status" event: sent when something changes that the panel did not ask for.
+export function subscribe(listener: (status: PreviewStatus) => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 export function patchState(patch: Partial<PreviewStatus>) {
   Object.assign(state, patch);
+  const status = handlers.get_status();
+  listeners.forEach((listener) => listener(status));
 }
 
 

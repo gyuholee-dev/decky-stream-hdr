@@ -13,7 +13,8 @@ from typing import Optional, Tuple
 from .errors import CodedError
 from .paths import Paths
 
-MARKER = "# streamhdr-wrapper v1"
+# Any version of the wrapper counts as ours; install() rewrites an outdated one.
+MARKER = "# streamhdr-wrapper"
 ELF_MAGIC = b"\x7fELF"
 
 Owner = Optional[Tuple[int, int]]
@@ -45,7 +46,7 @@ def is_elf(path: str) -> bool:
 
 
 def render_wrapper(template_text: str, paths: Paths) -> str:
-    return template_text.replace("__SHIM__", paths.shim).replace("__FLAG__", paths.flag)
+    return template_text.replace("__SHIM__", paths.shim).replace("__FLAG__", paths.flag).replace("__EVENT__", paths.stream_event)
 
 
 def _owner_of(path: str) -> Owner:
@@ -106,7 +107,7 @@ def _keep_original(paths: Paths) -> None:
 
 
 def needs_attention(paths: Paths) -> bool:
-    """Cheap check for the periodic maintenance: has anything the wrapper relies on gone missing?"""
+    """Cheap check, run when a file the wrapper relies on changed: has anything gone missing?"""
     return not (
         is_wrapper(paths.client)
         and os.path.isfile(paths.real)
@@ -179,7 +180,7 @@ def is_enabled(paths: Paths) -> bool:
 def uninstall(paths: Paths) -> None:
     """Remove everything this module created."""
     restore(paths)
-    for path in (paths.flag, paths.shim):
+    for path in (paths.flag, paths.shim, paths.stream_event):
         if os.path.exists(path):
             os.remove(path)
 

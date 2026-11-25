@@ -10,18 +10,14 @@ import decky
 sys.path.insert(0, os.path.join(decky.DECKY_PLUGIN_DIR, "py_modules"))
 
 from streamhdr.controller import Controller  # noqa: E402
+from streamhdr.events import Events  # noqa: E402
 from streamhdr.paths import Paths  # noqa: E402
 from streamhdr.settings import Settings  # noqa: E402
-from streamhdr.watcher import StreamWatcher  # noqa: E402
-
-
-MAINTAIN_INTERVAL_SECONDS = 20
 
 
 class Plugin:
     controller: Controller
-    watch_task: "asyncio.Task | None" = None
-    maintain_task: "asyncio.Task | None" = None
+    events: "Events | None" = None
 
     async def _main(self):
         uid = pwd.getpwnam(decky.DECKY_USER).pw_uid
@@ -31,32 +27,38 @@ class Plugin:
         decky.logger.info("StreamHDR backend loaded (user=%s)", decky.DECKY_USER)
 
         loop = asyncio.get_running_loop()
+
+        # The controller reports changes from worker threads; the panel hears about them as an event.
+        def publish(status):
+            asyncio.run_coroutine_threadsafe(decky.emit("status", status), loop)
+
+        self.controller.add_listener(publish)
         await loop.run_in_executor(None, self.controller.start)
 
-        async def on_change(streaming: bool):
-            # File and process work is blocking, so keep it off the event loop.
-            await loop.run_in_executor(None, self.controller.on_streaming_changed, streaming)
-
-        self.watch_task = loop.create_task(StreamWatcher(on_change).run())
-
-        async def maintain_forever():
-            # Steam restores its own streaming client on restart and update; put the wrapper back.
-            while True:
-                await asyncio.sleep(MAINTAIN_INTERVAL_SECONDS)
+        # File and process work is blocking, so every reaction runs off the event loop.
+        def react(function, *args):
+            async def run():
                 try:
-                    await loop.run_in_executor(None, self.controller.maintain)
-                except Exception as exc:  # keep the loop alive whatever happens
-                    decky.logger.error("Maintenance failed: %s", exc)
+                    await loop.run_in_executor(None, function, *args)
+                except Exception as exc:  # keep reacting to later events whatever happens
+                    decky.logger.error("Handling an event failed: %s", exc)
 
-        self.maintain_task = loop.create_task(maintain_forever())
+            loop.create_task(run())
+
+        self.events = Events(
+            paths,
+            loop,
+            on_streaming=lambda streaming: react(self.controller.on_streaming_changed, streaming),
+            on_files_changed=lambda: react(self.controller.maintain),
+            logger=decky.logger,
+        )
+        self.events.start()
 
     async def _unload(self):
         decky.logger.info("StreamHDR backend unloading")
-        for task in (self.watch_task, self.maintain_task):
-            if task:
-                task.cancel()
-        self.watch_task = None
-        self.maintain_task = None
+        if self.events:
+            self.events.stop()
+            self.events = None
         await asyncio.get_running_loop().run_in_executor(None, self.controller.stop)
 
     async def _uninstall(self):

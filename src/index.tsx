@@ -1,11 +1,12 @@
 import { ButtonItem, ConfirmModal, Field, Navigation, PanelSection, PanelSectionRow, SliderField, ToggleField, showModal } from "@decky/ui";
 import { definePlugin, routerHook } from "@decky/api";
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 
-import { getStatus, resetSettings, setContrast, setGamma, setHdrEnabled, setPaperWhite, setSaturation, Status } from "./api";
+import { resetSettings, setContrast, setGamma, setHdrEnabled, setPaperWhite, setSaturation, Status } from "./api";
 import { TitleView } from "./header";
 import { InfoIcon, StreamIcon } from "./icon";
 import { infoRoute, InfoPage } from "./info-page";
+import { useStatus } from "./status";
 import { errorText, strings } from "./strings";
 
 // Steam scrolls a focused row into view only until its top edge shows, which leaves the last rows half
@@ -89,31 +90,7 @@ function Message({ text }: { text: string }) {
 }
 
 function Panel() {
-  const [status, setStatus] = useState<Status | undefined>();
-  const [failed, setFailed] = useState(false);
-  const latest = useRef(0);
-
-  // The backend reply carries the stored state. A reply that a newer change has overtaken is dropped,
-  // or a control would jump back to an old value while the user is still dragging it.
-  const send = (request: Promise<Status>) => {
-    const id = ++latest.current;
-    request
-      .then((reply) => {
-        if (id === latest.current) setStatus(reply);
-      })
-      .catch(() => setFailed(true));
-  };
-  // Shows a change at once, then sends it to the backend.
-  const change = (patch: Partial<Status>, request: Promise<Status>) => {
-    setStatus((current) => (current ? { ...current, ...patch } : current));
-    send(request);
-  };
-
-  useEffect(() => {
-    getStatus()
-      .then(setStatus)
-      .catch(() => setFailed(true));
-  }, []);
+  const { status, failed, send, change } = useStatus();
 
   if (failed) return <Message text={strings.statusUnavailable} />;
   if (!status) return <Message text={strings.statusLoading} />;

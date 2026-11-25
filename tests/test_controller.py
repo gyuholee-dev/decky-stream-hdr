@@ -274,14 +274,6 @@ class MaintainTests(WrapperTestCase):
         self.assertIsNone(controller.status()["error"])
         self.assertTrue(controller.status()["wrapper"]["enabled"])
 
-    def test_reapplies_a_lost_color_table_while_streaming(self):
-        controller = self.make()
-        controller.set_saturation(150)
-        controller.on_streaming_changed(True)
-        self.gs.look = None  # for example gamescope restarted
-        controller.maintain()
-        self.assertEqual(self.gs.look, os.path.join(self.paths.luts_dir, look.lut_filename(look.Look(150, 100, 100, paperwhite.PAPER_WHITE_DEFAULT))))
-
     def test_leaves_a_correct_color_table_alone(self):
         controller = self.make()
         controller.set_saturation(150)

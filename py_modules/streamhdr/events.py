@@ -1,0 +1,255 @@
+"""Event sources that replace polling.
+
+* inotify tells us when a file we care about changes: the stream event file the wrapper writes, and the
+  files the wrapper relies on (so a Steam restart that restores the original client is noticed at once).
+* pidfd tells us when the streaming client process ends.
+
+Nothing here wakes up on a timer, except one short delay that merges a burst of file events into one.
+"""
+from __future__ import annotations
+
+import asyncio
+import ctypes
+import ctypes.util
+import logging
+import os
+import struct
+from typing import Callable, Dict, List, NamedTuple, Optional, Set
+
+from .paths import Paths
+
+CLIENT_NAMES = ("streaming_client", "streaming_client.real")
+
+IN_ATTRIB = 0x4
+IN_CLOSE_WRITE = 0x8
+IN_MOVED_FROM = 0x40
+IN_MOVED_TO = 0x80
+IN_CREATE = 0x100
+IN_DELETE = 0x200
+
+# What it takes for a file to appear, change or disappear.
+WRITTEN = IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE
+REMOVED = IN_DELETE | IN_MOVED_FROM
+ANY_CHANGE = WRITTEN | REMOVED | IN_ATTRIB
+
+_HEADER = struct.Struct("iIII")  # wd, mask, cookie, name length
+
+
+class FileEvent(NamedTuple):
+    directory: str
+    name: str
+    mask: int
+
+
+def parse_events(data: bytes) -> List[tuple]:
+    """Splits what read() returned from an inotify descriptor into (watch id, mask, name)."""
+    events = []
+    offset = 0
+    while offset + _HEADER.size <= len(data):
+        wd, mask, _cookie, length = _HEADER.unpack_from(data, offset)
+        offset += _HEADER.size
+        name = data[offset : offset + length].split(b"\0", 1)[0].decode("utf-8", "replace")
+        offset += length
+        events.append((wd, mask, name))
+    return events
+
+
+class Inotify:
+    """A thin inotify wrapper that reports events from the asyncio loop."""
+
+    def __init__(self, loop: asyncio.AbstractEventLoop, callback: Callable[[FileEvent], None]):
+        self._loop = loop
+        self._callback = callback
+        self._libc = ctypes.CDLL(ctypes.util.find_library("c") or "libc.so.6", use_errno=True)
+        self._fd = self._libc.inotify_init1(os.O_NONBLOCK | os.O_CLOEXEC)
+        if self._fd < 0:
+            raise OSError(ctypes.get_errno(), "inotify_init1 failed")
+        self._directories: Dict[int, str] = {}
+        loop.add_reader(self._fd, self._readable)
+
+    def watch(self, directory: str, mask: int) -> bool:
+        """Starts watching a folder. False when that is not possible, for example it does not exist yet."""
+        wd = self._libc.inotify_add_watch(self._fd, directory.encode(), mask)
+        if wd < 0:
+            return False
+        self._directories[wd] = directory
+        return True
+
+    def _readable(self) -> None:
+        try:
+            data = os.read(self._fd, 65536)
+        except (BlockingIOError, InterruptedError):
+            return
+        for wd, mask, name in parse_events(data):
+            directory = self._directories.get(wd)
+            if directory is not None and name:
+                self._callback(FileEvent(directory, name, mask))
+
+    def close(self) -> None:
+        if self._fd >= 0:
+            self._loop.remove_reader(self._fd)
+            os.close(self._fd)
+            self._fd = -1
+
+
+def find_streaming_pid(proc_root: str = "/proc") -> Optional[int]:
+    """The pid of the running streaming client, if there is one. Used once at start, not repeatedly."""
+    try:
+        entries = os.listdir(proc_root)
+    except OSError:
+        return None
+    for entry in entries:
+        if entry.isdigit() and is_streaming_client(int(entry), proc_root):
+            return int(entry)
+    return None
+
+
+def is_streaming_client(pid: int, proc_root: str = "/proc") -> bool:
+    try:
+        with open(os.path.join(proc_root, str(pid), "cmdline"), "rb") as handle:
+            first = handle.read(4096).split(b"\0", 1)[0]
+    except OSError:
+        return False
+    return os.path.basename(first.decode("utf-8", "replace")) in CLIENT_NAMES
+
+
+def parse_start_event(text: str) -> Optional[int]:
+    """The pid in a line like "start 1234" written by the wrapper, or None."""
+    parts = text.split()
+    if len(parts) == 2 and parts[0] == "start" and parts[1].isdigit():
+        return int(parts[1])
+    return None
+
+
+class Events:
+    """Turns file and process events into two callbacks.
+
+    on_streaming(True/False) is called when a stream starts or ends.
+    on_files_changed() is called when a file the wrapper relies on was created, changed or removed.
+    """
+
+    def __init__(
+        self,
+        paths: Paths,
+        loop: asyncio.AbstractEventLoop,
+        on_streaming: Callable[[bool], None],
+        on_files_changed: Callable[[], None],
+        logger: Optional[logging.Logger] = None,
+        inotify_factory: Callable[..., Inotify] = Inotify,
+        pidfd_open: Optional[Callable[[int], int]] = None,
+        proc_root: str = "/proc",
+        debounce: float = 0.5,
+    ):
+        self._paths = paths
+        self._loop = loop
+        self._on_streaming = on_streaming
+        self._on_files_changed = on_files_changed
+        self._log = logger or logging.getLogger("streamhdr")
+        self._inotify_factory = inotify_factory
+        self._pidfd_open = pidfd_open or getattr(os, "pidfd_open", None)
+        self._proc_root = proc_root
+        self._debounce = debounce
+        self._inotify: Optional[Inotify] = None
+        self._tracked_pid: Optional[int] = None
+        self._tracked_fd: Optional[int] = None
+        self._streaming = False
+        self._timer: Optional[asyncio.TimerHandle] = None
+        self._client_dir = os.path.dirname(paths.client)
+        self._event_name = os.path.basename(paths.stream_event)
+        self._client_names: Set[str] = {os.path.basename(paths.client), os.path.basename(paths.real)}
+        self._data_names: Set[str] = {os.path.basename(paths.shim), os.path.basename(paths.flag)}
+
+    # -- lifecycle -------------------------------------------------------
+
+    def start(self) -> None:
+        os.makedirs(self._paths.data_dir, exist_ok=True)
+        try:
+            self._inotify = self._inotify_factory(self._loop, self._on_file_event)
+        except OSError as exc:
+            self._log.error("Cannot watch files (%s); stream and wrapper changes will not be noticed", exc)
+            return
+        if not self._inotify.watch(self._paths.data_dir, WRITTEN | REMOVED):
+            self._log.error("Cannot watch %s", self._paths.data_dir)
+        if not self._inotify.watch(self._client_dir, ANY_CHANGE):
+            self._log.warning("Cannot watch %s yet; start Steam once and reload the plugin", self._client_dir)
+        # A stream may already be running when the plugin starts: look once.
+        pid = find_streaming_pid(self._proc_root)
+        if pid is not None:
+            self._track(pid)
+
+    def stop(self) -> None:
+        if self._timer is not None:
+            self._timer.cancel()
+            self._timer = None
+        self._untrack()
+        if self._inotify is not None:
+            self._inotify.close()
+            self._inotify = None
+
+    # -- file events -----------------------------------------------------
+
+    def _on_file_event(self, event: FileEvent) -> None:
+        if event.directory == self._paths.data_dir:
+            if event.name == self._event_name and event.mask & WRITTEN:
+                self._read_stream_event()
+            elif event.name in self._data_names:
+                self._schedule_files_changed()
+        elif event.directory == self._client_dir and event.name in self._client_names:
+            self._schedule_files_changed()
+
+    def _read_stream_event(self) -> None:
+        try:
+            with open(self._paths.stream_event, "r", encoding="utf-8") as handle:
+                pid = parse_start_event(handle.read(256))
+        except OSError:
+            return
+        if pid is not None:
+            self._track(pid)
+
+    def _schedule_files_changed(self) -> None:
+        """Merges a burst of file events (an install touches several files) into one call."""
+        if self._timer is not None:
+            return
+        self._timer = self._loop.call_later(self._debounce, self._fire_files_changed)
+
+    def _fire_files_changed(self) -> None:
+        self._timer = None
+        self._on_files_changed()
+
+    # -- the streaming client process --------------------------------------
+
+    def _track(self, pid: int) -> None:
+        if pid == self._tracked_pid:
+            return
+        if not is_streaming_client(pid, self._proc_root) or self._pidfd_open is None:
+            if self._pidfd_open is None:
+                self._log.error("This Python cannot wait for a process to end (no pidfd_open)")
+            return
+        try:
+            fd = self._pidfd_open(pid)
+        except OSError:
+            return  # the process is already gone
+        self._untrack()
+        self._tracked_pid, self._tracked_fd = pid, fd
+        self._loop.add_reader(fd, self._ended, pid)
+        self._set_streaming(True)
+
+    def _ended(self, pid: int) -> None:
+        if pid != self._tracked_pid:
+            return
+        self._untrack()
+        self._set_streaming(False)
+
+    def _untrack(self) -> None:
+        if self._tracked_fd is not None:
+            self._loop.remove_reader(self._tracked_fd)
+            try:
+                os.close(self._tracked_fd)
+            except OSError:
+                pass
+        self._tracked_pid = self._tracked_fd = None
+
+    def _set_streaming(self, streaming: bool) -> None:
+        if streaming != self._streaming:
+            self._streaming = streaming
+            self._on_streaming(streaming)

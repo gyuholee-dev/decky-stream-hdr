@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from . import gamescope, look, paperwhite, wrapper
 from .errors import info_for
@@ -32,6 +32,7 @@ class Controller:
         self.look_error: Optional[Dict[str, Any]] = None
         self.paper_white_error: Optional[Dict[str, Any]] = None
         self.streaming = False
+        self._listeners: List[Callable[[Dict[str, Any]], None]] = []
         self._look_applied = False  # True while the color LUT atom is set by us
 
     # -- lifecycle -------------------------------------------------------
@@ -124,27 +125,28 @@ class Controller:
             self.paper_white_error = info_for("file_operation_failed", str(exc))
             self.log.error("Could not save the paper white: %s", exc)
 
-    # -- periodic maintenance --------------------------------------------
+    # -- changes from outside ---------------------------------------------
+
+    def add_listener(self, listener: Callable[[Dict[str, Any]], None]) -> None:
+        """`listener(status)` is called after something changed that the panel did not ask for."""
+        self._listeners.append(listener)
+
+    def _changed(self) -> None:
+        status = self.status()
+        for listener in self._listeners:
+            try:
+                listener(status)
+            except Exception as exc:  # a broken listener must not break the controller
+                self.log.error("Status listener failed: %s", exc)
 
     def maintain(self) -> None:
-        """Called every few seconds: repair what Steam or gamescope may have undone."""
+        """Called when a file the wrapper relies on changed: Steam may have restored its own client."""
         if self.settings.get("hdr_enabled") and wrapper.needs_attention(self.paths):
             previous = self.error
             self.apply_hdr(True)
             if self.error is None and previous is None:
                 self.log.info("Reinstalled the streaming client wrapper")
-        if self.streaming and not self._look().is_neutral:
-            self._reapply_look_if_lost()
-
-    def _reapply_look_if_lost(self) -> None:
-        expected = os.path.join(self.paths.luts_dir, look.lut_filename(self._look()))
-        try:
-            current = self.gs.get_look(self.paths.gamescope_env)
-        except gamescope.GamescopeError:
-            return
-        if current != expected:
-            self.log.info("The color table was reset; applying it again")
-            self.apply_look()
+        self._changed()
 
     # -- contrast, gamma and saturation ------------------------------------
 
@@ -187,6 +189,7 @@ class Controller:
             self.apply_look()
         else:
             self._remove_look()
+        self._changed()
 
     def apply_look(self) -> None:
         current = self._look()
