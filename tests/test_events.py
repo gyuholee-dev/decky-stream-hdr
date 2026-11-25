@@ -188,6 +188,24 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
         await self.settle()
         self.assertEqual(self.files_changed, [1])
 
+    async def test_a_new_event_starts_the_quiet_period_again(self):
+        self.make_events(debounce=0.15).start()
+        client_dir = os.path.dirname(self.paths.client)
+        FakeInotify.last.fire(client_dir, "streaming_client", IN_CREATE)
+        await asyncio.sleep(0.1)
+        FakeInotify.last.fire(client_dir, "streaming_client", IN_CREATE)
+        await asyncio.sleep(0.1)
+        self.assertEqual(self.files_changed, [])  # 0.2 s after the first event, but only 0.1 s after the last
+        await asyncio.sleep(0.15)
+        self.assertEqual(self.files_changed, [1])
+
+    async def test_a_requested_check_waits_for_the_quiet_period(self):
+        self.make_events(debounce=0.05).start()
+        self.events.request_check()
+        self.assertEqual(self.files_changed, [])
+        await asyncio.sleep(0.15)
+        self.assertEqual(self.files_changed, [1])
+
     async def test_unrelated_files_are_ignored(self):
         self.make_events().start()
         FakeInotify.last.fire(os.path.dirname(self.paths.client), "steamwebhelper", IN_CREATE)

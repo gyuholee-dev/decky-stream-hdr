@@ -91,18 +91,29 @@ class ControllerTests(WrapperTestCase):
         wrapper.set_enabled(self.paths, False)
         controller = self.make()
         controller.start()
+        controller.maintain()
         self.assertTrue(controller.status()["wrapper"]["wrapped"])
         self.assertTrue(controller.status()["wrapper"]["enabled"])
 
-    def test_start_with_default_settings_installs_the_wrapper(self):
+    def test_start_does_not_touch_the_streaming_client(self):
+        wrapper.restore(self.paths)
         controller = self.make()
         controller.start()
+        self.assertFalse(controller.status()["wrapper"]["wrapped"])
+        self.assertTrue(wrapper.is_enabled(self.paths))  # only the flag is brought in line
+        self.assertIsNone(controller.status()["error"])
+
+    def test_start_with_default_settings_installs_the_wrapper_at_the_first_check(self):
+        controller = self.make()
+        controller.start()
+        controller.maintain()
         self.assertTrue(controller.status()["wrapper"]["wrapped"])
 
     def test_start_with_hdr_off_still_installs_the_wrapper_but_without_the_flag(self):
         controller = self.make()
         controller.settings.set("hdr_enabled", False)
         controller.start()
+        controller.maintain()
         status = controller.status()
         self.assertTrue(status["wrapper"]["wrapped"])
         self.assertFalse(status["wrapper"]["enabled"])
@@ -276,6 +287,67 @@ class MaintainTests(WrapperTestCase):
         controller.maintain()
         self.assertIsNone(controller.status()["error"])
         self.assertTrue(controller.status()["wrapper"]["enabled"])
+
+    def make_with_clock(self):
+        self.now = 1000.0
+        settings = Settings(os.path.join(self.tmp, "settings", "settings.json"))
+        self.gs = FakeGamescope()
+        return Controller(self.paths, settings, gamescope_api=self.gs, clock=lambda: self.now)
+
+    def steam_restores(self, controller):
+        """Steam puts its original client back and the files then go quiet: the plugin checks."""
+        self.write_client(b"\x7fELF-steam-update")
+        controller.maintain()
+
+    def test_stops_reinstalling_when_steam_keeps_restoring_the_client(self):
+        controller = self.make_with_clock()
+        controller.set_option("hdr_enabled", True)
+        for _ in range(2):
+            self.steam_restores(controller)
+            self.assertTrue(controller.status()["wrapper"]["wrapped"])
+            self.now += 25
+        self.steam_restores(controller)  # the third time within ten minutes
+        status = controller.status()
+        self.assertFalse(status["wrapper"]["wrapped"])
+        self.assertEqual(status["error"]["code"], "wrapper_unstable")
+        # Later checks leave it alone instead of fighting on.
+        self.now += 25
+        controller.maintain()
+        self.assertFalse(controller.status()["wrapper"]["wrapped"])
+
+    def test_restores_far_apart_are_not_a_fight(self):
+        controller = self.make_with_clock()
+        controller.set_option("hdr_enabled", True)
+        for _ in range(5):
+            self.steam_restores(controller)
+            self.assertTrue(controller.status()["wrapper"]["wrapped"])
+            self.assertIsNone(controller.status()["error"])
+            self.now += 700  # Steam updates now and then; that is normal
+
+    def test_switching_hdr_streaming_tries_again_after_giving_up(self):
+        controller = self.make_with_clock()
+        controller.set_option("hdr_enabled", True)
+        for _ in range(3):
+            self.steam_restores(controller)
+            self.now += 25
+        self.assertEqual(controller.status()["error"]["code"], "wrapper_unstable")
+        controller.set_option("hdr_enabled", False)
+        controller.set_option("hdr_enabled", True)
+        status = controller.status()
+        self.assertIsNone(status["error"])
+        self.assertTrue(status["wrapper"]["wrapped"])
+
+    def test_the_first_install_after_start_does_not_count_as_a_restore(self):
+        controller = self.make_with_clock()
+        wrapper.restore(self.paths)
+        controller.start()
+        for _ in range(2):
+            controller.maintain()
+            self.write_client(b"\x7fELF-steam-update")
+            self.now += 25
+        controller.maintain()
+        self.assertIsNone(controller.status()["error"])
+        self.assertTrue(controller.status()["wrapper"]["wrapped"])
 
     def test_leaves_a_correct_color_table_alone(self):
         controller = self.make()

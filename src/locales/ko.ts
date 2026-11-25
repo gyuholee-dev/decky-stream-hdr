@@ -80,6 +80,7 @@ export const ko: LocaleStrings = {
     xprop_missing: "xprop이 설치되어 있지 않아 HDR 출력 설정을 적용할 수 없습니다.",
     xprop_timeout: "HDR 출력 설정 적용이 응답시간 초과로 실패하였습니다.",
     xprop_failed: "HDR 출력 설정 적용을 실패하였습니다: {detail}",
+    wrapper_unstable: "Steam이 스트리밍 클라이언트를 계속 복원하고 있어 자동 설치를 중단했습니다. HDR Streaming을 껐다 켜거나 플러그인을 다시 로드해 주십시오.",
     lut_failed: "LUT 파일 생성에 실패하였습니다: {detail}",
   },
 };

@@ -41,3 +41,29 @@ StreamHDR은 Steam Remote Play에 BT.2020 PQ HDR 스트리밍을 지원하는 �
 - PyroWave 동영상: 켬 (품질 조정 1 이상)
 - 낮은 지연 시간 네트워크: 켬
 - 이 기기의 Steam 설정 > 개발자 > HDR 호환성 테스트: 켬
+
+## 설치 방법
+
+1. 이 기기에 [Decky Loader](https://decky.xyz)가 설치되어 있어야 합니다.
+2. [GitHub Releases](https://github.com/gyuholee-dev/decky-stream-hdr/releases)에서 `decky-stream-hdr-1.0.0.zip`을 내려받습니다.
+3. Decky 설정에서 "개발자 모드"를 켭니다.
+4. Decky 설정의 개발자 메뉴에서 "ZIP 파일에서 플러그인 설치"를 실행하고 내려받은 파일을 선택합니다.
+5. Decky 메뉴에서 StreamHDR을 엽니다. 위의 호스트 설정과 클라이언트 설정을 맞춘 뒤 Remote Play를 실행합니다.
+
+내려받지 않고 설치하려면 4번에서 "URL에서 플러그인 설치"를 실행하고 릴리스 파일의 주소를 입력합니다.
+
+```text
+https://github.com/gyuholee-dev/decky-stream-hdr/releases/download/v1.0.0/decky-stream-hdr-1.0.0.zip
+```
+
+제거할 때는 Decky 메뉴의 플러그인 설정에서 StreamHDR을 제거합니다. 스트리밍 클라이언트가 원래대로 복원되고 플러그인이 만든 파일이 정리됩니다.
+
+## 알려진 문제
+
+- Lenovo Legion Go 2 OLED의 CachyOS Handheld에서만 확인했습니다. 다른 기기와 OS에서는 확인하지 못했습니다.
+- 게임 모드에서만 동작합니다. 데스크톱 모드의 Steam에서는 지원하지 않습니다.
+- HDR Streaming과 Paper White는 스트리밍 중에 바꿀 수 없고, 바꾼 값은 다음 접속부터 적용됩니다.
+- 호스트의 "스트리밍 디스플레이 HDR"을 "클라이언트와 일치"로 두면 HDR 캡처가 시작된 뒤 몇 초 만에 SDR로 돌아갑니다. "기본" 또는 "맞춤 설정"으로 두십시오.
+- 호스트에서 NVFBC 캡처를 켜면 색이 바랜 것처럼 보입니다. 반드시 끄십시오.
+- Steam은 시작할 때 변경된 스트리밍 클라이언트를 원래대로 되돌립니다. 플러그인이 다시 적용하지만, 그 직후에는 잠시 HDR이 적용되지 않을 수 있습니다.
+- Steam 업데이트로 스트리밍 클라이언트의 구조가 바뀌면 동작하지 않을 수 있습니다. 이 경우 HDR Streaming을 끄거나 플러그인을 제거하면 원래대로 돌아옵니다.

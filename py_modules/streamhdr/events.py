@@ -4,7 +4,10 @@
   files the wrapper relies on (so a Steam restart that restores the original client is noticed at once).
 * pidfd tells us when the streaming client process ends.
 
-Nothing here wakes up on a timer, except one short delay that merges a burst of file events into one.
+Nothing here wakes up on a timer, except one quiet period that merges a burst of file events into one call.
+The call only comes after the files have been quiet for QUIET_SECONDS: Steam checks the streaming client's size
+every time it starts and restarts itself to repair it, so putting the wrapper back the moment Steam restores the
+original makes Steam repair it again, over and over. Waiting until Steam is done breaks that loop.
 """
 from __future__ import annotations
 
@@ -19,6 +22,10 @@ from typing import Callable, Dict, List, NamedTuple, Optional, Set
 from .paths import Paths
 
 CLIENT_NAMES = ("streaming_client", "streaming_client.real")
+
+# How long the wrapper's files must stay unchanged before the plugin checks them. Steam restarts itself about
+# 25 seconds after it repairs the client, so this has to be clearly longer than that.
+QUIET_SECONDS = 60.0
 
 IN_ATTRIB = 0x4
 IN_CLOSE_WRITE = 0x8
@@ -125,7 +132,8 @@ class Events:
     """Turns file and process events into two callbacks.
 
     on_streaming(True/False) is called when a stream starts or ends.
-    on_files_changed() is called when a file the wrapper relies on was created, changed or removed.
+    on_files_changed() is called once the files the wrapper relies on were created, changed or removed and
+    then stayed quiet for `debounce` seconds (every new change starts the wait again).
     """
 
     def __init__(
@@ -138,7 +146,7 @@ class Events:
         inotify_factory: Callable[..., Inotify] = Inotify,
         pidfd_open: Optional[Callable[[int], int]] = None,
         proc_root: str = "/proc",
-        debounce: float = 0.5,
+        debounce: float = QUIET_SECONDS,
     ):
         self._paths = paths
         self._loop = loop
@@ -206,10 +214,14 @@ class Events:
         if pid is not None:
             self._track(pid)
 
+    def request_check(self) -> None:
+        """Ask for a check once things have been quiet for a while (used right after the plugin starts)."""
+        self._schedule_files_changed()
+
     def _schedule_files_changed(self) -> None:
-        """Merges a burst of file events (an install touches several files) into one call."""
+        """Waits for the files to stay quiet: each new event starts the wait again."""
         if self._timer is not None:
-            return
+            self._timer.cancel()
         self._timer = self._loop.call_later(self._debounce, self._fire_files_changed)
 
     def _fire_files_changed(self) -> None:

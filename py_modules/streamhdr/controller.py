@@ -4,12 +4,20 @@ from __future__ import annotations
 import logging
 import os
 import shutil
-from typing import Any, Callable, Dict, List, Optional
+import time
+from collections import deque
+from typing import Any, Callable, Deque, Dict, List, Optional
 
 from . import gamescope, look, options, paperwhite, wrapper
 from .errors import info_for
 from .paths import Paths
 from .settings import Settings
+
+# Steam repairs the streaming client whenever it starts and finds the wrapper. If it has had to restore the
+# original this many times within this many seconds, we stop putting the wrapper back: that is a fight with
+# Steam, and Steam's repair also restarts the whole client.
+MAX_RESTORES = 3
+RESTORE_WINDOW_SECONDS = 600.0
 
 
 class Controller:
@@ -19,6 +27,7 @@ class Controller:
         settings: Settings,
         logger: Optional[logging.Logger] = None,
         gamescope_api: Any = gamescope,
+        clock: Callable[[], float] = time.monotonic,
     ):
         self.paths = paths
         self.settings = settings
@@ -30,14 +39,22 @@ class Controller:
         self.streaming = False
         self._listeners: List[Callable[[Dict[str, Any]], None]] = []
         self._look_applied = False  # True while the color LUT atom is set by us
+        self._clock = clock
+        self._wrapped_before = False  # we have put the wrapper in place at least once in this run
+        self._restores: Deque[float] = deque()  # when Steam put the original back after we had wrapped it
+        self._gave_up = False
 
     # -- lifecycle -------------------------------------------------------
 
     def start(self) -> None:
-        """Called when the plugin backend loads: make everything match the saved settings."""
+        """Called when the plugin backend loads: make everything match the saved settings.
+
+        The wrapper itself is not installed here. The plugin usually loads while Steam is still starting, and
+        Steam repairs a modified streaming client at startup, so the first install waits until the files have
+        been quiet for a while (the caller asks for that check once its event watching is running)."""
         self._clear_stale_look()
         self.apply_paper_white()
-        self.apply_hdr(self.settings.get("hdr_enabled"))
+        wrapper.set_enabled(self.paths, bool(self.settings.get("hdr_enabled")))
 
     def stop(self) -> None:
         """Called when the plugin unloads: put Steam's original client and the display back."""
@@ -72,6 +89,7 @@ class Controller:
         self.settings.reset(keep)
         self.apply_paper_white()
         if not self.streaming:
+            self._retry_wrapper()
             self.apply_hdr(self.settings.get("hdr_enabled"))
         self._apply_look_setting()
         return self.status()
@@ -85,6 +103,7 @@ class Controller:
             return self.status()
         self.settings.set(name, options.snap(name, value))
         if name == "hdr_enabled":
+            self._retry_wrapper()  # the user asked again, so a give-up no longer applies
             self.apply_hdr(self.settings.get(name))
         elif name == "paper_white":
             self.apply_paper_white()
@@ -104,6 +123,7 @@ class Controller:
         try:
             self.apply_paper_white()  # the injected library reads it; it may have been removed
             result = wrapper.install(self.paths)
+            self._wrapped_before = True
             if result != "ok":
                 self.log.info("Streaming client wrapper %s", result)
             wrapper.set_enabled(self.paths, enabled)
@@ -141,14 +161,45 @@ class Controller:
                 self.log.error("Status listener failed: %s", exc)
 
     def maintain(self) -> None:
-        """Called when a file the wrapper relies on changed: Steam may have restored its own client."""
+        """Called when the files the wrapper relies on changed and stayed quiet: Steam may have restored its
+        own client. Puts the wrapper back, unless Steam keeps undoing it."""
         enabled = self.settings.get("hdr_enabled")
-        if wrapper.needs_attention(self.paths, enabled):
-            previous = self.error
-            self.apply_hdr(enabled)
-            if self.error is None and previous is None:
-                self.log.info("Reinstalled the streaming client wrapper")
+        if not self._gave_up and wrapper.needs_attention(self.paths, enabled):
+            if self._steam_restored_original() and self._too_many_restores():
+                self._give_up()
+            else:
+                previous = self.error
+                self.apply_hdr(enabled)
+                if self.error is None and previous is None:
+                    self.log.info("Reinstalled the streaming client wrapper")
         self._changed()
+
+    def _steam_restored_original(self) -> bool:
+        """True when the original client is back after we had wrapped it: Steam repaired it. Counts it."""
+        if not (self._wrapped_before and wrapper.is_elf(self.paths.client)):
+            return False
+        now = self._clock()
+        self._restores.append(now)
+        while self._restores and now - self._restores[0] > RESTORE_WINDOW_SECONDS:
+            self._restores.popleft()
+        return True
+
+    def _too_many_restores(self) -> bool:
+        return len(self._restores) >= MAX_RESTORES
+
+    def _give_up(self) -> None:
+        self._gave_up = True
+        self.error = info_for("wrapper_unstable")
+        self.log.error(
+            "Steam restored its streaming client %d times within %d seconds; not installing the wrapper again "
+            "until HDR Streaming is switched or the plugin is reloaded",
+            len(self._restores),
+            int(RESTORE_WINDOW_SECONDS),
+        )
+
+    def _retry_wrapper(self) -> None:
+        self._gave_up = False
+        self._restores.clear()
 
     # -- the color table (contrast, gamma, saturation) ----------------------
 

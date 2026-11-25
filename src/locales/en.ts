@@ -97,6 +97,7 @@ export const en = {
     xprop_missing: "xprop is not installed, so HDR output settings can't be applied.",
     xprop_timeout: "Applying the HDR output settings timed out.",
     xprop_failed: "Couldn't apply the HDR output settings: {detail}",
+    wrapper_unstable: "Steam keeps restoring its streaming client, so automatic installation was stopped. Switch HDR Streaming off and on, or reload the plugin.",
     lut_failed: "Couldn't create the LUT file: {detail}",
   } as Record<string, string>,
 };

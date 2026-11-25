@@ -53,6 +53,8 @@ class Plugin:
             logger=decky.logger,
         )
         self.events.start()
+        # The wrapper is installed by the first check, once the files have been quiet for a while.
+        self.events.request_check()
 
     async def _unload(self):
         decky.logger.info("StreamHDR backend unloading")
