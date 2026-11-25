@@ -9,6 +9,9 @@ export const ko: LocaleStrings = {
   contrastDescription: "밝은 곳과 어두운 곳의 차이를 조절합니다. 100%는 원래 화면 그대로입니다. 스트리밍하는 동안에만 적용됩니다.",
   gammaDescription: "어두운 곳과 중간 밝기의 밝기를 조절합니다. 1은 원래 화면 그대로이며, 값이 클수록 어둡고 작을수록 밝아집니다. 스트리밍하는 동안에만 적용됩니다.",
   saturationDescription: "스트리밍하는 동안 색의 선명함(채도)을 조절합니다. 100%는 원래 색 그대로이며, 150%를 권장합니다.",
+  resetTitle: "모든 설정 초기화",
+  resetDescription: "Paper White, Contrast, Gamma, Saturation을 처음 값으로 되돌리고 HDR streaming을 끕니다.",
+  resetConfirmButton: "초기화",
   info: {
     aboutHeading: "소개",
     about:

@@ -18,7 +18,7 @@ LUT_SIZE = 17  # gamescope's internal 3D LUT size
 
 SATURATION_MIN, SATURATION_MAX, SATURATION_STEP, SATURATION_DEFAULT = 0, 200, 5, 100  # percent
 CONTRAST_MIN, CONTRAST_MAX, CONTRAST_STEP, CONTRAST_DEFAULT = 0, 200, 5, 100  # percent
-GAMMA_MIN, GAMMA_MAX, GAMMA_STEP, GAMMA_DEFAULT = 50, 200, 10, 100  # hundredths: 100 means 1.00
+GAMMA_MIN, GAMMA_MAX, GAMMA_STEP, GAMMA_DEFAULT = 50, 200, 5, 100  # hundredths: 100 means 1.00
 
 # Gamma fades out between the pivot and this many times the pivot.
 GAMMA_FADE_RATIO = 4.0

@@ -122,7 +122,8 @@ class ValueTests(unittest.TestCase):
         self.assertEqual(look.clamp_saturation(999), 200)
         self.assertEqual(look.clamp_contrast(-5), 0)
         self.assertEqual(look.clamp_contrast(102), 100)
-        self.assertEqual(look.clamp_gamma(104), 100)
+        self.assertEqual(look.clamp_gamma(102), 100)
+        self.assertEqual(look.clamp_gamma(103), 105)
         self.assertEqual(look.clamp_gamma(30), 50)
         self.assertEqual(look.clamp_gamma(999), 200)
 

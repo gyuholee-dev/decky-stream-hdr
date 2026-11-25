@@ -80,3 +80,6 @@ class Plugin:
 
     async def set_gamma(self, hundredths: int):
         return await asyncio.get_running_loop().run_in_executor(None, self.controller.set_gamma, hundredths)
+
+    async def reset_settings(self):
+        return await asyncio.get_running_loop().run_in_executor(None, self.controller.reset_settings)

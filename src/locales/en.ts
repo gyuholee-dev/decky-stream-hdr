@@ -28,6 +28,11 @@ export const en = {
     "Applies only while you are streaming. Very high values can clip strongly colored areas.",
   infoButton: "Plugin Info",
   githubButton: "GitHub",
+  resetButton: "Reset All Settings",
+  resetTitle: "Reset all settings",
+  resetDescription:
+    "Sets Paper White, Contrast, Gamma and Saturation back to their defaults and turns HDR streaming off.",
+  resetConfirmButton: "Reset",
   // Texts of the info page that the "Plugin Info" button opens.
   info: {
     aboutHeading: "About",

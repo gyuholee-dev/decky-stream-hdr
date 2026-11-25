@@ -31,3 +31,4 @@ export const setSaturation = callable<[percent: number], Status>("set_saturation
 export const setPaperWhite = callable<[nits: number], Status>("set_paper_white");
 export const setContrast = callable<[percent: number], Status>("set_contrast");
 export const setGamma = callable<[hundredths: number], Status>("set_gamma");
+export const resetSettings = callable<[], Status>("reset_settings");

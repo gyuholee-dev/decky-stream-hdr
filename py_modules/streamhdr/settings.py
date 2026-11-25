@@ -44,6 +44,10 @@ class Settings:
         self._values[key] = value
         self._save()
 
+    def reset(self) -> None:
+        self._values = dict(DEFAULTS)
+        self._save()
+
     def _save(self) -> None:
         os.makedirs(os.path.dirname(self._path), exist_ok=True)
         tmp = self._path + ".tmp"

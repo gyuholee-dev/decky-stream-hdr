@@ -43,7 +43,7 @@ class ControllerPaperWhiteTests(WrapperTestCase):
     def test_contrast_and_gamma_are_snapped_and_saved(self):
         controller = self.make()
         self.assertEqual(controller.set_contrast(103)["contrast"], 105)
-        self.assertEqual(controller.set_gamma(149)["gamma"], 150)
+        self.assertEqual(controller.set_gamma(147)["gamma"], 145)
         self.assertEqual(controller.set_gamma(10)["gamma"], 50)
 
     def test_changes_while_streaming_use_a_new_look_file_and_drop_the_old_one(self):
@@ -71,6 +71,29 @@ class ControllerPaperWhiteTests(WrapperTestCase):
         controller.set_gamma(80)
         self.assertIsNotNone(controller.gs.look)
         controller.set_gamma(100)
+        self.assertIsNone(controller.gs.look)
+
+    def test_reset_settings_restores_every_default(self):
+        controller = self.make()
+        controller.set_hdr_enabled(True)
+        controller.set_paper_white(250)
+        controller.set_contrast(120)
+        controller.set_gamma(80)
+        controller.set_saturation(150)
+        status = controller.reset_settings()
+        self.assertEqual(
+            (status["hdr_enabled"], status["paper_white"], status["contrast"], status["gamma"], status["saturation"]),
+            (False, 200, 100, 100, 100),
+        )
+        self.assertEqual(self.read_file(), "200")
+        self.assertFalse(status["wrapper"]["enabled"])
+
+    def test_reset_while_streaming_takes_the_look_off(self):
+        controller = self.make()
+        controller.on_streaming_changed(True)
+        controller.set_gamma(80)
+        self.assertIsNotNone(controller.gs.look)
+        controller.reset_settings()
         self.assertIsNone(controller.gs.look)
 
     def test_uninstall_removes_the_file(self):

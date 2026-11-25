@@ -67,6 +67,11 @@ const handlers: Record<string, (...args: any[]) => PreviewStatus> = {
     };
     return handlers.get_status();
   },
+  reset_settings: () => {
+    Object.assign(state, { paper_white: 200, contrast: 100, gamma: 100, saturation: 100, hdr_enabled: false });
+    state.wrapper = { ...state.wrapper, enabled: false };
+    return handlers.get_status();
+  },
   set_paper_white: (nits: number) => {
     state.paper_white = snapNits(nits);
     return handlers.get_status();
@@ -76,7 +81,7 @@ const handlers: Record<string, (...args: any[]) => PreviewStatus> = {
     return handlers.get_status();
   },
   set_gamma: (hundredths: number) => {
-    state.gamma = Math.max(50, Math.min(200, Math.round(hundredths / 10) * 10));
+    state.gamma = Math.max(50, Math.min(200, Math.round(hundredths / 5) * 5));
     return handlers.get_status();
   },
   set_saturation: (percent: number) => {

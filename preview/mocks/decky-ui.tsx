@@ -3,8 +3,9 @@
 // With a capture of the real Steam UI (`yarn capture`) they render the same markup and class names
 // as Steam's own components, so the real Steam CSS styles them. Without a capture they fall back to a
 // rough look made by preview/preview.css (class names starting with "approx-").
-import { createContext, forwardRef, useContext, useEffect, useRef } from "react";
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import { cloneElement, createContext, forwardRef, useContext, useEffect, useRef } from "react";
+import type { CSSProperties, KeyboardEvent, ReactElement, ReactNode } from "react";
+import { createRoot } from "react-dom/client";
 
 import { router } from "../router";
 
@@ -467,3 +468,48 @@ export const ScrollPanelGroup = forwardRef<HTMLDivElement, { children?: ReactNod
 
 // Button ids used for the footer hints of the scroll window; the preview shows no footer.
 export const GamepadButton = { DIR_UP: 1, DIR_DOWN: 2 };
+
+// --- modal dialog ---------------------------------------------------------------------------------
+
+interface ConfirmModalMockProps {
+  strTitle?: ReactNode;
+  strDescription?: ReactNode;
+  strOKButtonText?: ReactNode;
+  onOK?: () => void;
+  closeModal?: () => void;
+}
+
+export function ConfirmModal({ strTitle, strDescription, strOKButtonText, onOK, closeModal }: ConfirmModalMockProps) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+      <div style={{ background: "#23262e", color: "#fff", padding: "24px", width: "420px", maxWidth: "90vw", borderRadius: "4px", fontSize: "14px" }}>
+        <div style={{ fontSize: "18px", marginBottom: "12px" }}>{strTitle}</div>
+        <div style={{ marginBottom: "20px", lineHeight: 1.4 }}>{strDescription}</div>
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <button onClick={() => closeModal?.()}>Cancel</button>
+          <button
+            onClick={() => {
+              onOK?.();
+              closeModal?.();
+            }}
+          >
+            {strOKButtonText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Renders the modal into its own root, like Steam does, and hands it a function that closes it.
+export const showModal = (modal: ReactElement) => {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  const close = () => {
+    root.unmount();
+    host.remove();
+  };
+  root.render(cloneElement(modal as ReactElement<{ closeModal?: () => void }>, { closeModal: close }));
+  return { Close: close };
+};

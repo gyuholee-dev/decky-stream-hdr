@@ -1,12 +1,16 @@
-import { Field, Navigation, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { ButtonItem, ConfirmModal, Field, Navigation, PanelSection, PanelSectionRow, SliderField, ToggleField, showModal } from "@decky/ui";
 import { definePlugin, routerHook } from "@decky/api";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 
-import { getStatus, setContrast, setGamma, setHdrEnabled, setPaperWhite, setSaturation, Status } from "./api";
+import { getStatus, resetSettings, setContrast, setGamma, setHdrEnabled, setPaperWhite, setSaturation, Status } from "./api";
 import { TitleView } from "./header";
 import { InfoIcon, StreamIcon } from "./icon";
 import { infoRoute, InfoPage } from "./info-page";
 import { errorText, strings } from "./strings";
+
+// Steam scrolls a focused row into view only until its top edge shows, which leaves the last rows half
+// hidden behind the bottom bar. Keeping this much space clear below a focused row fixes that.
+const SCROLL_PADDING = "16px";
 
 const PAPER_WHITE_MIN = 80;
 const PAPER_WHITE_MAX = 480;
@@ -21,7 +25,7 @@ const CONTRAST_DEFAULT = 100;
 // Gamma is stored in hundredths (100 means 1.00); the slider shows the plain number.
 const GAMMA_MIN = 50;
 const GAMMA_MAX = 200;
-const GAMMA_STEP = 10;
+const GAMMA_STEP = 5;
 const GAMMA_DEFAULT = 100;
 
 const SATURATION_MIN = 0;
@@ -38,9 +42,23 @@ function KeepAll({ children }: { children: ReactNode }) {
 // The "Plugin Info" row at the bottom of the panel: a small line of text with an icon that opens the
 // info page (the repository link is on that page). It is a plain row, not a full-size button, and is
 // only highlighted when it has focus.
-function Footer() {
+function Footer({ onStatus, onFailed }: { onStatus: (status: Status) => void; onFailed: () => void }) {
+  const confirmReset = () =>
+    showModal(
+      <ConfirmModal
+        strTitle={strings.resetTitle}
+        strDescription={<KeepAll>{strings.resetDescription}</KeepAll>}
+        strOKButtonText={strings.resetConfirmButton}
+        onOK={() => {
+          resetSettings()
+            .then(onStatus)
+            .catch(onFailed);
+        }}
+      />,
+    );
+
   return (
-    <PanelSection>
+    <>
       <PanelSectionRow>
         <Field
           focusable
@@ -55,7 +73,12 @@ function Footer() {
           }
         />
       </PanelSectionRow>
-    </PanelSection>
+      <PanelSectionRow>
+        <ButtonItem layout="below" onClick={confirmReset}>
+          {strings.resetButton}
+        </ButtonItem>
+      </PanelSectionRow>
+    </>
   );
 }
 
@@ -69,7 +92,7 @@ function Message({ text }: { text: string }) {
   );
 }
 
-function Content() {
+function Panel() {
   const [status, setStatus] = useState<Status | undefined>();
   const [failed, setFailed] = useState(false);
 
@@ -189,8 +212,44 @@ function Content() {
             <KeepAll>{strings.errorPrefix + errorText(status.look_error)}</KeepAll>
           </PanelSectionRow>
         )}
+        <Footer onStatus={setStatus} onFailed={() => setFailed(true)} />
       </PanelSection>
-      <Footer />
+    </>
+  );
+}
+
+// Sets the scroll padding on the panel's scrolling container while the panel is shown.
+function ScrollPadding() {
+  const marker = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    let element: HTMLElement | null = marker.current?.parentElement ?? null;
+    while (element && !/(auto|scroll)/.test(getComputedStyle(element).overflowY)) element = element.parentElement;
+    if (!element) return;
+    const scroller = element;
+    const previous = scroller.style.scrollPaddingBottom;
+    scroller.style.scrollPaddingBottom = SCROLL_PADDING;
+    return () => {
+      scroller.style.scrollPaddingBottom = previous;
+    };
+  }, []);
+  // Steam leaves 24px under every panel section and draws a line under its last row. Here the panel ends 16px
+  // under the last button instead: the row already has 10px of padding, and 6px more goes on the section.
+  return (
+    <>
+      <style>
+        {/* The section's own bottom margin, and the line Steam draws under its last row. */
+        ".streamhdr-marker + * { margin-bottom: 0 !important; padding-bottom: 6px !important; } .streamhdr-marker + * > :last-child > :last-child::after { display: none !important; }"}
+      </style>
+      <span ref={marker} className="streamhdr-marker" style={{ display: "none" }} />
+    </>
+  );
+}
+
+function Content() {
+  return (
+    <>
+      <ScrollPadding />
+      <Panel />
     </>
   );
 }

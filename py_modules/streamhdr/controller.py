@@ -60,7 +60,18 @@ class Controller:
                 pass
             self.log.info("Removed all plugin files")
         except OSError as exc:
+            self.error = info_for("file_operation_failed", str(exc))
             self.log.error("Cleanup failed: %s", exc)
+
+    def reset_settings(self) -> Dict[str, Any]:
+        """The Reset All Settings button: every option back to its default, HDR streaming off."""
+        self.settings.reset()
+        self.look_error = None
+        self.apply_paper_white()
+        self.apply_hdr(False)
+        if self.streaming:
+            self.apply_look()  # all neutral now, so this takes the color table off
+        return self.status()
 
     # -- HDR toggle ------------------------------------------------------
 
@@ -69,6 +80,7 @@ class Controller:
         self.error = None
         try:
             if enabled:
+                self.apply_paper_white()  # the injected library reads it; it may have been removed
                 result = wrapper.install(self.paths)
                 if result != "ok":
                     self.log.info("Streaming client wrapper %s", result)
