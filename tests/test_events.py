@@ -66,6 +66,36 @@ class FindTests(unittest.TestCase):
         self.assertIsNone(events.find_streaming_pid(os.path.join(self.root, "missing")))
 
 
+class ProcessAgeTests(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
+
+    def write(self, pid, command, start_ticks):
+        os.makedirs(os.path.join(self.root, str(pid)))
+        # Fields 1 to 21, then the start time as field 22, then the rest.
+        before = " ".join(["S"] + ["0"] * 18)  # fields 3 to 21
+        with open(os.path.join(self.root, str(pid), "stat"), "w") as handle:
+            handle.write("%d (%s) %s %d 0 0\n" % (pid, command, before, start_ticks))
+
+    def test_age_from_start_time_and_uptime(self):
+        ticks = os.sysconf("SC_CLK_TCK")
+        self.write(5, "steam", int(90 * ticks))
+        with open(os.path.join(self.root, "uptime"), "w") as handle:
+            handle.write("100.50 400.00\n")
+        self.assertAlmostEqual(events.process_age(5, self.root), 10.5, places=2)
+
+    def test_a_command_name_with_spaces_and_parentheses(self):
+        ticks = os.sysconf("SC_CLK_TCK")
+        self.write(6, "Web Content (x)", int(20 * ticks))
+        with open(os.path.join(self.root, "uptime"), "w") as handle:
+            handle.write("50.00 1.00\n")
+        self.assertAlmostEqual(events.process_age(6, self.root), 30.0, places=2)
+
+    def test_unreadable_gives_none(self):
+        self.assertIsNone(events.process_age(7, self.root))
+
+
 class FakeInotify:
     """Stands in for inotify, which only exists on Linux. `fire` plays an event."""
 
@@ -118,7 +148,7 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
         os.write(self.pipes[pid][1], b"x")
         shutil.rmtree(os.path.join(self.proc, str(pid)), ignore_errors=True)  # an ended process has no /proc entry
 
-    def make_events(self, debounce=0.02):
+    def make_events(self, debounce=0.02, age_of=None):
         self.events = Events(
             self.paths,
             self.loop,
@@ -129,6 +159,7 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
             pidfd_open=self.pidfd_open,
             proc_root=self.proc,
             debounce=debounce,
+            age_of=age_of,
         )
         self.addCleanup(self.events.stop)
         return self.events
@@ -261,6 +292,24 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
         self.end_process(807)
         await self.settle()
         self.assertEqual(self.steam_exits, [1, 1])
+
+    async def test_the_check_waits_until_steam_has_been_up_long_enough(self):
+        make_proc(self.proc, 810, [STEAM_CLIENT])
+        self.age = 0.0  # Steam has just started
+        self.make_events(debounce=0.1, age_of=lambda pid: self.age).start()
+        self.events.request_check()
+        await asyncio.sleep(0.15)  # the quiet period is over, but Steam is young
+        self.assertEqual(self.files_changed, [])
+        self.age = 5.0  # by the next look it is old enough
+        await asyncio.sleep(0.15)
+        self.assertEqual(self.files_changed, [1])
+
+    async def test_an_unreadable_steam_age_does_not_block_the_check(self):
+        make_proc(self.proc, 811, [STEAM_CLIENT])
+        self.make_events(debounce=0.05, age_of=lambda pid: None).start()
+        self.events.request_check()
+        await asyncio.sleep(0.12)
+        self.assertEqual(self.files_changed, [1])
 
     async def test_unrelated_files_are_ignored(self):
         self.make_events().start()

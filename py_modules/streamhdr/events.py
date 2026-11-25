@@ -26,8 +26,9 @@ STEAM_NAME = "steam"  # the Steam client process: .../steamrt64/steam
 STEAM_DIR = "steamrt64"
 
 # How long the wrapper's files must stay unchanged before the plugin checks them. Steam restarts itself about
-# 25 seconds after it repairs the client, so this has to be clearly longer than that.
-QUIET_SECONDS = 60.0
+# 25 seconds after it repairs the client, so this must not be shorter than that. The plugin also puts the
+# original client back whenever Steam ends, so this wait is only a second line of defence.
+QUIET_SECONDS = 30.0
 
 IN_ATTRIB = 0x4
 IN_CLOSE_WRITE = 0x8
@@ -140,6 +141,21 @@ def find_steam_pids(proc_root: str = "/proc") -> List[int]:
     return [int(entry) for entry in entries if entry.isdigit() and is_steam_client(int(entry), proc_root)]
 
 
+def process_age(pid: int, proc_root: str = "/proc") -> Optional[float]:
+    """Seconds since the process started, or None when that cannot be read."""
+    try:
+        with open(os.path.join(proc_root, str(pid), "stat"), "rb") as handle:
+            data = handle.read(4096).decode("utf-8", "replace")
+        # The command name sits in parentheses and may hold spaces: the fields continue after the last ")".
+        fields = data.rsplit(")", 1)[1].split()
+        start_ticks = int(fields[19])  # field 22 of the stat line: start time in clock ticks since boot
+        with open(os.path.join(proc_root, "uptime"), "r", encoding="ascii") as handle:
+            uptime = float(handle.read().split()[0])
+        return uptime - start_ticks / os.sysconf("SC_CLK_TCK")
+    except (OSError, ValueError, IndexError):
+        return None
+
+
 def parse_start_event(text: str) -> Optional[int]:
     """The pid in a line like "start 1234" written by the wrapper, or None."""
     parts = text.split()
@@ -155,6 +171,8 @@ class Events:
     on_files_changed() is called once the files the wrapper relies on were created, changed or removed and
     then stayed quiet for `debounce` seconds (every new change starts the wait again). While Steam is not
     running it is called again after every quiet period, so the wrapper goes in once Steam is up.
+    The check also waits until the youngest Steam client process is `debounce` seconds old: Steam checks the
+    streaming client when it starts, so the wrapper must not go in before that and its restart are over.
     on_steam_exit() is called when a Steam client process ends: Steam checks the streaming client's size
     every time it starts, so the original has to be back in place before the next start.
     """
@@ -171,6 +189,7 @@ class Events:
         pidfd_open: Optional[Callable[[int], int]] = None,
         proc_root: str = "/proc",
         debounce: float = QUIET_SECONDS,
+        age_of: Optional[Callable[[int], Optional[float]]] = None,
     ):
         self._paths = paths
         self._loop = loop
@@ -182,6 +201,7 @@ class Events:
         self._pidfd_open = pidfd_open or getattr(os, "pidfd_open", None)
         self._proc_root = proc_root
         self._debounce = debounce
+        self._age_of = age_of or (lambda pid: process_age(pid, proc_root))
         self._inotify: Optional[Inotify] = None
         self._tracked_pid: Optional[int] = None
         self._tracked_fd: Optional[int] = None
@@ -256,9 +276,20 @@ class Events:
     def _fire_files_changed(self) -> None:
         self._timer = None
         self._track_steam()  # a Steam that started since we last looked
+        remaining = self._steam_wait()
+        if remaining > 0:  # Steam is still young: wait until it has been up long enough
+            self._timer = self._loop.call_later(remaining + 0.01, self._fire_files_changed)
+            return
         self._on_files_changed()
         if not self._steam_fds:
             self._schedule_files_changed()  # nothing to repair yet: look again once Steam may be up
+
+    def _steam_wait(self) -> float:
+        """Seconds until the youngest Steam client process is old enough; 0 when there is none or its age is unknown."""
+        ages = [age for age in (self._age_of(pid) for pid in self._steam_fds) if age is not None]
+        if not ages:
+            return 0.0
+        return max(0.0, self._debounce - min(ages))
 
     # -- the Steam client process ----------------------------------------------
 
