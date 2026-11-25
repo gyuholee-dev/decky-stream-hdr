@@ -47,7 +47,7 @@ export const en = {
         "Tested with Windows 11, an RTX 50 series GPU and a Samsung OLED monitor.",
       "Client (the device that runs the stream): SteamOS must be running in Game Mode on a device with a built-in or externally connected HDR display. " +
         "Tested with the Lenovo Legion Go 2 OLED running CachyOS Handheld.",
-      "Network: A high-bandwidth, low-latency connection is recommended. For a stationary device, a wired connection of 1GbE or faster is recommended; for a handheld device, connect to 5 GHz Wi-Fi instead of 6 GHz and turn off Wi-Fi power saving. Depending on the device's performance and driver support, packet loss and latency can increase on 6 GHz (Wi-Fi 7), and gameplay may not run smoothly. Tested with a 2.5GbE wired connection and a 5 GHz Wi-Fi connection.",
+      "Network: A high-bandwidth, low-latency connection is recommended. For a stationary device, a wired connection of 1GbE or faster is recommended; for a handheld device, connect to 5 GHz Wi-Fi instead of 6 GHz and turn off Wi-Fi power saving. Depending on the device's performance and driver support, packet loss and latency can increase on 6 GHz (Wi-Fi 6E/7), and gameplay may not run smoothly. Tested with a 2.5GbE wired connection and a 5 GHz Wi-Fi connection.",
       "The PyroWave Video option, added to Steam in October 2026, is required. (Be sure to turn off Use NVFBC capture on NVIDIA GPU.) Steam's regular Bandwidth Limit does not apply to PyroWave, which sends a very large amount of data (over 1 Gbps). If the frame rate drops or stuttering appears while streaming, turn off YUV 4:4:4 and set Quality Modifier to 1 or lower (about 620-730 Mbps at 1080p).",
     ],
     hostHeading: "Host Settings",
