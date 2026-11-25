@@ -464,3 +464,6 @@ export const ScrollPanelGroup = forwardRef<HTMLDivElement, { children?: ReactNod
     </div>
   );
 });
+
+// Button ids used for the footer hints of the scroll window; the preview shows no footer.
+export const GamepadButton = { DIR_UP: 1, DIR_DOWN: 2 };

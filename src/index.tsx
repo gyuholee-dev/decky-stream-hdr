@@ -2,7 +2,7 @@ import { Field, Navigation, PanelSection, PanelSectionRow, SliderField, ToggleFi
 import { definePlugin, routerHook } from "@decky/api";
 import { ReactNode, useEffect, useState } from "react";
 
-import { getStatus, setHdrEnabled, setPaperWhite, setSaturation, Status } from "./api";
+import { getStatus, setContrast, setGamma, setHdrEnabled, setPaperWhite, setSaturation, Status } from "./api";
 import { TitleView } from "./header";
 import { InfoIcon, StreamIcon } from "./icon";
 import { infoRoute, InfoPage } from "./info-page";
@@ -12,6 +12,17 @@ const PAPER_WHITE_MIN = 80;
 const PAPER_WHITE_MAX = 480;
 const PAPER_WHITE_STEP = 10;
 const PAPER_WHITE_DEFAULT = 200;
+
+const CONTRAST_MIN = 0;
+const CONTRAST_MAX = 200;
+const CONTRAST_STEP = 5;
+const CONTRAST_DEFAULT = 100;
+
+// Gamma is stored in hundredths (100 means 1.00); the slider shows the plain number.
+const GAMMA_MIN = 50;
+const GAMMA_MAX = 200;
+const GAMMA_STEP = 10;
+const GAMMA_DEFAULT = 100;
 
 const SATURATION_MIN = 0;
 const SATURATION_MAX = 200;
@@ -117,6 +128,44 @@ function Content() {
         )}
         <PanelSectionRow>
           <SliderField
+            label={strings.contrastLabel}
+            description={<KeepAll>{strings.contrastDescription}</KeepAll>}
+            value={status.contrast}
+            min={CONTRAST_MIN}
+            max={CONTRAST_MAX}
+            step={CONTRAST_STEP}
+            resetValue={CONTRAST_DEFAULT}
+            showValue
+            valueSuffix="%"
+            onChange={(percent: number) => {
+              setStatus({ ...status, contrast: percent });
+              setContrast(percent)
+                .then(setStatus)
+                .catch(() => setFailed(true));
+            }}
+          />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <SliderField
+            label={strings.gammaLabel}
+            description={<KeepAll>{strings.gammaDescription}</KeepAll>}
+            value={status.gamma / 100}
+            min={GAMMA_MIN / 100}
+            max={GAMMA_MAX / 100}
+            step={GAMMA_STEP / 100}
+            resetValue={GAMMA_DEFAULT / 100}
+            showValue
+            onChange={(gamma: number) => {
+              const hundredths = Math.round(gamma * 100);
+              setStatus({ ...status, gamma: hundredths });
+              setGamma(hundredths)
+                .then(setStatus)
+                .catch(() => setFailed(true));
+            }}
+          />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <SliderField
             label={strings.saturationLabel}
             description={<KeepAll>{strings.saturationDescription}</KeepAll>}
             value={status.saturation}
@@ -135,9 +184,9 @@ function Content() {
             }}
           />
         </PanelSectionRow>
-        {status.saturation_error && (
+        {status.look_error && (
           <PanelSectionRow>
-            <KeepAll>{strings.errorPrefix + errorText(status.saturation_error)}</KeepAll>
+            <KeepAll>{strings.errorPrefix + errorText(status.look_error)}</KeepAll>
           </PanelSectionRow>
         )}
       </PanelSection>

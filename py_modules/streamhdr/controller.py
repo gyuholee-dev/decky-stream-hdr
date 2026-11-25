@@ -6,7 +6,7 @@ import os
 import shutil
 from typing import Any, Dict, Optional
 
-from . import gamescope, paperwhite, saturation, wrapper
+from . import gamescope, look, paperwhite, wrapper
 from .errors import info_for
 from .paths import Paths
 from .settings import Settings
@@ -25,10 +25,10 @@ class Controller:
         self.log = logger or logging.getLogger("streamhdr")
         self.gs = gamescope_api
         self.error: Optional[Dict[str, Any]] = None
-        self.saturation_error: Optional[Dict[str, Any]] = None
+        self.look_error: Optional[Dict[str, Any]] = None
         self.paper_white_error: Optional[Dict[str, Any]] = None
         self.streaming = False
-        self._look_applied = False  # True while the saturation LUT atom is set by us
+        self._look_applied = False  # True while the color LUT atom is set by us
 
     # -- lifecycle -------------------------------------------------------
 
@@ -91,6 +91,8 @@ class Controller:
     def set_paper_white(self, nits: int) -> Dict[str, Any]:
         self.settings.set("paper_white", paperwhite.clamp_nits(int(nits)))
         self.apply_paper_white()
+        if self.streaming:
+            self.apply_look()  # contrast and gamma are centered on the paper white
         return self.status()
 
     def apply_paper_white(self) -> None:
@@ -111,33 +113,50 @@ class Controller:
             self.apply_hdr(True)
             if self.error is None and previous is None:
                 self.log.info("Reinstalled the streaming client wrapper")
-        if self.streaming and self.settings.get("saturation") != saturation.SATURATION_DEFAULT:
+        if self.streaming and not self._look().is_neutral:
             self._reapply_look_if_lost()
 
     def _reapply_look_if_lost(self) -> None:
-        expected = os.path.join(self.paths.luts_dir, saturation.lut_filename(self.settings.get("saturation")))
+        expected = os.path.join(self.paths.luts_dir, look.lut_filename(self._look()))
         try:
             current = self.gs.get_look(self.paths.gamescope_env)
         except gamescope.GamescopeError:
             return
         if current != expected:
             self.log.info("The color table was reset; applying it again")
-            self.apply_saturation()
+            self.apply_look()
 
-    # -- saturation ------------------------------------------------------
+    # -- contrast, gamma and saturation ------------------------------------
+
+    def _look(self) -> look.Look:
+        return look.Look(
+            self.settings.get("saturation"),
+            self.settings.get("contrast"),
+            self.settings.get("gamma"),
+            self.settings.get("paper_white"),
+        )
 
     def set_saturation(self, percent: int) -> Dict[str, Any]:
-        percent = saturation.clamp_percent(int(percent))
-        self.settings.set("saturation", percent)
-        self.saturation_error = None
-        if percent != saturation.SATURATION_DEFAULT:
-            try:
-                saturation.ensure_lut(self.paths.luts_dir, percent)  # build it now, not at connect time
-            except OSError as exc:
-                self.saturation_error = info_for("lut_failed", str(exc))
-                self.log.error("Could not create the color table: %s", exc)
+        return self._set_look_value("saturation", look.clamp_saturation(int(percent)))
+
+    def set_contrast(self, percent: int) -> Dict[str, Any]:
+        return self._set_look_value("contrast", look.clamp_contrast(int(percent)))
+
+    def set_gamma(self, hundredths: int) -> Dict[str, Any]:
+        return self._set_look_value("gamma", look.clamp_gamma(int(hundredths)))
+
+    def _set_look_value(self, key: str, value: int) -> Dict[str, Any]:
+        self.settings.set(key, value)
+        self.look_error = None
         if self.streaming:
-            self.apply_saturation()
+            self.apply_look()
+        elif not self._look().is_neutral:
+            try:
+                path = look.ensure_lut(self.paths.luts_dir, self._look())  # build it now, not at connect time
+                look.prune(self.paths.luts_dir, path)
+            except OSError as exc:
+                self.look_error = info_for("lut_failed", str(exc))
+                self.log.error("Could not create the color table: %s", exc)
         return self.status()
 
     def on_streaming_changed(self, streaming: bool) -> None:
@@ -145,25 +164,26 @@ class Controller:
         self.streaming = streaming
         self.log.info("Streaming %s", "started" if streaming else "ended")
         if streaming:
-            self.apply_saturation()
+            self.apply_look()
         else:
             self._remove_look()
 
-    def apply_saturation(self) -> None:
-        percent = self.settings.get("saturation")
-        self.saturation_error = None
+    def apply_look(self) -> None:
+        current = self._look()
+        self.look_error = None
         try:
-            if percent == saturation.SATURATION_DEFAULT:
+            if current.is_neutral:
                 self._remove_look()
                 return
-            lut = saturation.ensure_lut(self.paths.luts_dir, percent)
+            lut = look.ensure_lut(self.paths.luts_dir, current)
             self.gs.set_look(lut, self.paths.gamescope_env)
             self._look_applied = True
+            look.prune(self.paths.luts_dir, lut)
         except gamescope.GamescopeError as exc:
-            self.saturation_error = exc.info()
-            self.log.error("Saturation problem: %s", exc)
+            self.look_error = exc.info()
+            self.log.error("Color adjustment problem: %s", exc)
         except OSError as exc:
-            self.saturation_error = info_for("lut_failed", str(exc))
+            self.look_error = info_for("lut_failed", str(exc))
             self.log.error("Could not create the color table: %s", exc)
 
     def _remove_look(self) -> None:
@@ -207,10 +227,12 @@ class Controller:
             "hdr_enabled": hdr_enabled,
             "hdr_active": hdr_active,
             "saturation": self.settings.get("saturation"),
+            "contrast": self.settings.get("contrast"),
+            "gamma": self.settings.get("gamma"),
             "paper_white": self.settings.get("paper_white"),
             "streaming": self.streaming,
             "wrapper": wrapper_state,
             "error": self.error,
-            "saturation_error": self.saturation_error,
+            "look_error": self.look_error,
             "paper_white_error": self.paper_white_error,
         }

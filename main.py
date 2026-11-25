@@ -74,3 +74,9 @@ class Plugin:
 
     async def set_paper_white(self, nits: int):
         return await asyncio.get_running_loop().run_in_executor(None, self.controller.set_paper_white, nits)
+
+    async def set_contrast(self, percent: int):
+        return await asyncio.get_running_loop().run_in_executor(None, self.controller.set_contrast, percent)
+
+    async def set_gamma(self, hundredths: int):
+        return await asyncio.get_running_loop().run_in_executor(None, self.controller.set_gamma, hundredths)

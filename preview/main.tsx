@@ -99,11 +99,11 @@ function Preview() {
           </select>
         </label>
         <label>
-          Saturation problem
+          Color adjustment problem
           <select
             value={saturationError}
             onChange={(event) => {
-              patchState({ saturation_error: event.target.value ? { code: event.target.value, detail: "sample detail" } : null });
+              patchState({ look_error: event.target.value ? { code: event.target.value, detail: "sample detail" } : null });
               setSaturationError(event.target.value);
               remount();
             }}

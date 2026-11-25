@@ -14,6 +14,14 @@ export const en = {
   paperWhiteDescription:
     "Sets how bright reference (paper) white is in the stream, in nits. 200-230 is recommended. " +
     "Takes effect the next time you connect.",
+  contrastLabel: "Contrast",
+  contrastDescription:
+    "Widens or narrows the difference between dark and bright areas around paper white. 100% leaves the picture unchanged. " +
+    "Applies only while you are streaming.",
+  gammaLabel: "Gamma",
+  gammaDescription:
+    "Changes the brightness of dark and middle tones while keeping highlights. 1 leaves the picture unchanged; " +
+    "higher values are darker and lower values are brighter. Applies only while you are streaming.",
   saturationLabel: "Saturation",
   saturationDescription:
     "Boosts the color saturation of the HDR stream. 100% leaves colors unchanged and 150% is recommended. " +

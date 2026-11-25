@@ -2,7 +2,7 @@ import json
 import os
 import unittest
 
-from streamhdr import gamescope, saturation, wrapper
+from streamhdr import gamescope, look, wrapper
 from streamhdr.controller import Controller
 from streamhdr.settings import Settings
 
@@ -132,7 +132,7 @@ class SaturationTests(WrapperTestCase):
         return Controller(self.paths, settings, gamescope_api=self.gs)
 
     def lut(self, percent):
-        return os.path.join(self.paths.luts_dir, saturation.lut_filename(percent))
+        return os.path.join(self.paths.luts_dir, look.lut_filename(look.Look(percent, 100, 100, 200)))
 
     def test_value_is_snapped_stored_and_lut_prepared(self):
         controller = self.make()
@@ -181,7 +181,7 @@ class SaturationTests(WrapperTestCase):
         controller.set_saturation(150)
         self.gs.fail = True
         controller.on_streaming_changed(True)
-        self.assertEqual(controller.status()["saturation_error"], {"code": "env_missing", "detail": None})
+        self.assertEqual(controller.status()["look_error"], {"code": "env_missing", "detail": None})
 
     def test_stop_clears_the_atom(self):
         controller = self.make()
@@ -273,7 +273,7 @@ class MaintainTests(WrapperTestCase):
         controller.on_streaming_changed(True)
         self.gs.look = None  # for example gamescope restarted
         controller.maintain()
-        self.assertEqual(self.gs.look, os.path.join(self.paths.luts_dir, saturation.lut_filename(150)))
+        self.assertEqual(self.gs.look, os.path.join(self.paths.luts_dir, look.lut_filename(look.Look(150, 100, 100, 200))))
 
     def test_leaves_a_correct_color_table_alone(self):
         controller = self.make()

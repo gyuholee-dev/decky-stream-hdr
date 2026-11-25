@@ -6,6 +6,8 @@ export interface PreviewStatus {
   hdr_active: boolean;
   saturation: number;
   paper_white: number;
+  contrast: number;
+  gamma: number;
   streaming: boolean;
   wrapper: {
     client_found: boolean;
@@ -15,7 +17,7 @@ export interface PreviewStatus {
     enabled: boolean;
   };
   error: { code: string; detail: string | null } | null;
-  saturation_error: { code: string; detail: string | null } | null;
+  look_error: { code: string; detail: string | null } | null;
   paper_white_error: { code: string; detail: string | null } | null;
 }
 
@@ -29,6 +31,8 @@ const state: PreviewStatus = {
   hdr_active: false,
   saturation: 100,
   paper_white: 200,
+  contrast: 100,
+  gamma: 100,
   streaming: false,
   wrapper: {
     client_found: true,
@@ -38,7 +42,7 @@ const state: PreviewStatus = {
     enabled: false,
   },
   error: null,
-  saturation_error: null,
+  look_error: null,
   paper_white_error: null,
 };
 
@@ -65,6 +69,14 @@ const handlers: Record<string, (...args: any[]) => PreviewStatus> = {
   },
   set_paper_white: (nits: number) => {
     state.paper_white = snapNits(nits);
+    return handlers.get_status();
+  },
+  set_contrast: (percent: number) => {
+    state.contrast = Math.max(0, Math.min(200, Math.round(percent / 5) * 5));
+    return handlers.get_status();
+  },
+  set_gamma: (hundredths: number) => {
+    state.gamma = Math.max(50, Math.min(200, Math.round(hundredths / 10) * 10));
     return handlers.get_status();
   },
   set_saturation: (percent: number) => {

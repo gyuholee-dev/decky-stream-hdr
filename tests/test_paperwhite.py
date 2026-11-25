@@ -40,6 +40,39 @@ class ControllerPaperWhiteTests(WrapperTestCase):
         self.assertEqual(self.read_file(), "230")
         self.assertEqual(Settings(os.path.join(self.tmp, "settings", "settings.json")).get("paper_white"), 230)
 
+    def test_contrast_and_gamma_are_snapped_and_saved(self):
+        controller = self.make()
+        self.assertEqual(controller.set_contrast(103)["contrast"], 105)
+        self.assertEqual(controller.set_gamma(149)["gamma"], 150)
+        self.assertEqual(controller.set_gamma(10)["gamma"], 50)
+
+    def test_changes_while_streaming_use_a_new_look_file_and_drop_the_old_one(self):
+        controller = self.make()
+        controller.on_streaming_changed(True)
+        controller.set_contrast(120)
+        first = controller.gs.look
+        controller.set_gamma(80)
+        second = controller.gs.look
+        self.assertNotEqual(first, second)
+        self.assertFalse(os.path.exists(first))
+        self.assertTrue(os.path.exists(second))
+
+    def test_paper_white_change_rebuilds_the_look_while_streaming(self):
+        controller = self.make()
+        controller.on_streaming_changed(True)
+        controller.set_contrast(120)
+        first = controller.gs.look
+        controller.set_paper_white(250)
+        self.assertNotEqual(controller.gs.look, first)
+
+    def test_all_neutral_removes_the_look(self):
+        controller = self.make()
+        controller.on_streaming_changed(True)
+        controller.set_gamma(80)
+        self.assertIsNotNone(controller.gs.look)
+        controller.set_gamma(100)
+        self.assertIsNone(controller.gs.look)
+
     def test_uninstall_removes_the_file(self):
         controller = self.make()
         controller.set_paper_white(250)
