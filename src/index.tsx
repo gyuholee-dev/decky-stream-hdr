@@ -40,9 +40,11 @@ function Footer({ onRequest }: { onRequest: (request: Promise<Status>) => void }
           onActivate={() => Navigation.Navigate(infoRoute)}
           onClick={() => Navigation.Navigate(infoRoute)}
           description={
-            <span style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", fontSize: "12px" }}>
+            <span style={{ display: "flex", justifyContent: "center", alignItems: "center", fontSize: "12px" }}>
+              <span style={{ display: "inline-flex", marginRight: "5px" }}>
+                <InfoIcon />
+              </span>
               {strings.infoButton}
-              <InfoIcon />
             </span>
           }
         />

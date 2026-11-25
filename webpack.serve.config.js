@@ -1,6 +1,6 @@
 // Browser preview of the plugin panel (yarn serve, or yarn start to open the browser too). Steam's own UI modules are not available
 // outside Steam, so @decky/ui and @decky/api are replaced by small stand-ins under preview/mocks.
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,14 +10,7 @@ import webpack from "webpack";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf-8"));
 
-// Steam's real UI styles, captured from a device with `yarn capture`. Without a capture the preview
-// falls back to a rough approximation.
-const captured = path.join(root, "preview", "steam-ui");
-const hasCapture = existsSync(path.join(captured, "classes.json")) && existsSync(path.join(captured, "steam.css"));
-const steamUi = hasCapture ? captured : path.join(root, "preview", "steam-ui-fallback");
-if (!hasCapture) {
-  console.warn("[preview] No Steam UI capture found: using the approximate look. Run `yarn capture` for the real one.");
-}
+// PREVIEW_PORT serves the preview on another port, next to a running one.
 
 // Values from package.json that the plugin shows on its info page.
 const pluginInfo = new webpack.DefinePlugin({
@@ -41,8 +34,6 @@ export default {
     alias: {
       "@decky/ui": path.join(root, "preview", "mocks", "decky-ui.tsx"),
       "@decky/api": path.join(root, "preview", "mocks", "decky-api.ts"),
-      "steam-ui-classes": path.join(steamUi, "classes.json"),
-      "steam-ui.css": path.join(steamUi, "steam.css"),
       "streamhdr-options": path.join(root, "py_modules", "streamhdr", "options.json"),
     },
   },
@@ -56,11 +47,10 @@ export default {
       },
       // Material icons are imported as raw SVG text.
       { test: /\.svg$/, type: "asset/source" },
-      // url: false keeps Steam's own url(...) references (fonts) untouched; the dev server serves them.
-      { test: /\.css$/, use: ["style-loader", { loader: "css-loader", options: { url: false } }] },
+      { test: /\.css$/, use: ["style-loader", "css-loader"] },
     ],
   },
   plugins: [new HtmlWebpackPlugin({ template: "./preview/index.html" }), pluginInfo],
-  devServer: { port: 5173, hot: true, open: false, static: { directory: steamUi } },
+  devServer: { port: Number(process.env.PREVIEW_PORT) || 5173, hot: true, open: false },
   performance: { hints: false },
 };

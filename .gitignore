@@ -187,5 +187,3 @@ cli/
 # Release output
 release/
 
-# Steam UI captured for the preview (Valve CSS and fonts, local use only)
-preview/steam-ui/

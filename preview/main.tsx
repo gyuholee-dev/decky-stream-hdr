@@ -6,9 +6,8 @@ import { strings } from "../src/strings";
 import { knobs, patchState } from "./backend";
 import { router } from "./router";
 import "./setup";
-import "steam-ui.css";
 import "./preview.css";
-import { cx, real } from "./mocks/steam";
+import "./mock_steam.css";
 
 const errorCodes = Object.keys(strings.errors);
 
@@ -28,7 +27,7 @@ function Preview() {
 
   return (
     <div className="page">
-      <div className={cx("qam", real && "real", real && "BasicUI")}>
+      <div className="qam">
         <div className="qam-title">{plugin.titleView}</div>
         <div key={remountKey}>{plugin.content}</div>
       </div>

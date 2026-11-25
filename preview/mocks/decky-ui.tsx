@@ -1,53 +1,30 @@
-// Stand-ins for the @decky/ui components used by the panel.
+// Stand-ins for the @decky/ui components used by the panel, for the browser preview only.
 //
-// With a capture of the real Steam UI (`yarn capture`) they render the same markup and class names
-// as Steam's own components, so the real Steam CSS styles them. Without a capture they fall back to a
-// rough look made by preview/preview.css (class names starting with "approx-").
-import { cloneElement, createContext, forwardRef, useContext, useEffect, useRef } from "react";
+// They imitate how Steam's components look and behave, in preview/mock_steam.css, with class names of their
+// own (starting with "mk-"). The markup keeps the shape of Steam's: a section holds rows, a row holds a
+// field with a left column (label, description) and an optional right column, and every field draws its
+// separator line with ::after. The panel's own CSS relies on that shape.
+import { forwardRef, cloneElement, useRef } from "react";
 import type { CSSProperties, KeyboardEvent, ReactElement, ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { router } from "../router";
 
-import { controls, cx, dialog, real, scrollClass, slider, useFocus } from "./steam";
+import { cx, useFocus } from "./steam";
 
 // --- sections ---------------------------------------------------------------------------------
 
 export function PanelSection({ title, children }: { title?: string; children?: ReactNode }) {
-  if (!real) {
-    return (
-      <section className="approx-section">
-        {title && <div className="approx-section-title">{title}</div>}
-        {children}
-      </section>
-    );
-  }
   return (
-    <div className={controls("PanelSection")}>
-      {title && (
-        <div className={controls("PanelSectionTitle")}>
-          <div className={controls("Text")}>{title}</div>
-        </div>
-      )}
+    <div className="mk-section">
+      {title && <div className="mk-section-title">{title}</div>}
       {children}
     </div>
   );
 }
 
-// Steam adds "qam-focusable-item" to rows that hold a button; its CSS also hides field labels there.
-const RowContext = createContext<(() => void) | null>(null);
-
 export function PanelSectionRow({ children }: { children?: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  if (!real) return <div className="approx-row">{children}</div>;
-  const markFocusable = () => ref.current?.classList.add("qam-focusable-item");
-  return (
-    <RowContext.Provider value={markFocusable}>
-      <div ref={ref} className={controls("PanelSectionRow")}>
-        {children}
-      </div>
-    </RowContext.Provider>
-  );
+  return <div className="mk-row">{children}</div>;
 }
 
 // --- toggle -----------------------------------------------------------------------------------
@@ -70,56 +47,27 @@ export function ToggleField({ label, description, checked, disabled, onChange }:
     }
   };
 
-  if (!real) {
-    return (
-      <div className="approx-field">
-        <div className="approx-field-row">
-          <div className="approx-label">{label}</div>
-          <button type="button" role="switch" aria-checked={checked} disabled={disabled} className={cx("approx-toggle", checked && "on")} onClick={toggle}>
-            <span className="approx-knob" />
-          </button>
-        </div>
-        {description && <div className="approx-desc">{description}</div>}
-      </div>
-    );
-  }
-
   return (
-    <div
-      className={cx(
-        dialog("Field"),
-        dialog("Classic"),
-        dialog("VerticalAlignCenter"),
-        dialog("WithBottomSeparatorStandard"),
-        dialog("ExtraPaddingOnChildrenBelow"),
-        dialog("StandardPadding"),
-        dialog("HighlightOnFocus"),
-        "Panel",
-        "Focusable",
-        focused && "gpfocuswithin",
-      )}
-    >
-      <div className={dialog("FieldLeftColumn")}>
-        <div className={dialog("FieldLabelRow")}>
-          <div className={dialog("FieldLabel")}>{label}</div>
+    <div className={cx("mk-field", "mk-highlight", focused && "mk-focused")}>
+      <div className="mk-left">
+        <div className="mk-label-row">
+          <div className="mk-label">{label}</div>
         </div>
-        {description && <div className={dialog("FieldDescription")}>{description}</div>}
+        {description && <div className="mk-desc">{description}</div>}
       </div>
-      <div className={dialog("FieldRightColumn")}>
-        <div className={dialog("FieldChildrenWithIcon")}>
-          <div className={dialog("FieldChildrenInner")}>
-            <div
-              role="checkbox"
-              aria-checked={checked}
-              tabIndex={0}
-              className={cx(dialog("Toggle"), checked && dialog("On"), disabled && dialog("Disabled"), "Focusable", focused && "gpfocus")}
-              onClick={toggle}
-              onKeyDown={onKeyDown}
-              {...bind}
-            >
-              <div className={dialog("ToggleRail")} />
-              <div className={dialog("ToggleSwitch")} />
-            </div>
+      <div className="mk-right">
+        <div className="mk-toggle-holder">
+          <div
+            role="checkbox"
+            aria-checked={checked}
+            tabIndex={0}
+            className={cx("mk-toggle", checked && "mk-on", disabled && "mk-disabled", focused && "mk-focused")}
+            onClick={toggle}
+            onKeyDown={onKeyDown}
+            {...bind}
+          >
+            <div className="mk-toggle-rail" />
+            <div className="mk-toggle-knob" />
           </div>
         </div>
       </div>
@@ -175,7 +123,7 @@ function SliderHit({ label, value, min, max, step, disabled, onChange, bind }: S
     const rect = ref.current?.getBoundingClientRect();
     if (!rect || rect.width <= 0) return;
     // The drawn handle's center travels between half a handle width from each end of the track.
-    const handle = ref.current?.parentElement?.querySelector(".SliderHandle")?.getBoundingClientRect().width ?? 0;
+    const handle = ref.current?.parentElement?.querySelector(".mk-slider-handle")?.getBoundingClientRect().width ?? 0;
     const travel = rect.width - handle;
     if (travel <= 0) return;
     const fraction = (clientX - rect.left - handle / 2) / travel;
@@ -232,113 +180,47 @@ export function SliderField({
   step = 1,
   showValue,
   valueSuffix = "",
-  resetValue,
   disabled,
   onChange,
 }: SliderFieldProps) {
   const { focused, bind } = useFocus();
   const normalized = max > min ? (value - min) / (max - min) : 0;
-  const normalizedDefault = resetValue !== undefined && max > min ? (resetValue - min) / (max - min) : normalized;
 
-  // A transparent layer over the drawn slider makes it usable with the mouse and the keyboard. It maps the
-  // pointer to the drawn track itself, so the handle ends up exactly under the pointer.
-  const input = (
-    <SliderHit
-      label={typeof label === "string" ? label : undefined}
-      value={value}
-      min={min}
-      max={max}
-      step={step}
-      disabled={disabled}
-      onChange={onChange}
-      bind={bind}
-    />
-  );
-
-  if (!real) {
-    return (
-      <div className="approx-field">
-        <div className="approx-field-row">
-          <div className="approx-label">{label}</div>
-          {showValue && (
-            <div className="approx-value">
-              {value}
-              {valueSuffix}
-            </div>
-          )}
-        </div>
-        <input className="approx-slider" type="range" min={min} max={max} step={step} value={value} disabled={disabled} onChange={(event) => onChange?.(Number(event.target.value))} />
-        {description && <div className="approx-desc">{description}</div>}
-      </div>
-    );
-  }
-
-  const sliderVars: Record<string, string | number> = {
-    position: "relative",
-    "--normalized-slider-value": normalized,
-    "--normalized-slider-origin": 0,
-    "--slider-extra-notch-padding": "0px",
-  };
-  if (resetValue !== undefined) sliderVars["--normalized-slider-default-value"] = normalizedDefault;
-
-  // Same markup as Steam's slider field (captured from a device).
   return (
-    <div
-      className={cx(
-        dialog("Field"),
-        dialog("Classic"),
-        dialog("WithChildrenBelow"),
-        dialog("VerticalAlignCenter"),
-        dialog("WithBottomSeparatorStandard"),
-        dialog("ChildrenWidthFixed"),
-        dialog("ExtraPaddingOnChildrenBelow"),
-        dialog("StandardPadding"),
-        dialog("HighlightOnFocus"),
-        "Panel",
-        "Focusable",
-        focused && "gpfocuswithin",
-      )}
-      style={{ "--indent-level": 0 } as React.CSSProperties}
-    >
-      <div className={dialog("FieldLeftColumn")}>
-        <div className={dialog("FieldLabelRow")}>
-          <div className={dialog("FieldLabel")}>{label}</div>
+    <div className={cx("mk-field", "mk-highlight", focused && "mk-focused")}>
+      <div className="mk-left">
+        <div className="mk-label-row">
+          <div className="mk-label">{label}</div>
           {showValue && (
-            <div className={dialog("FieldLabelValue")}>
+            <div className="mk-value">
               {value}
               {valueSuffix}
             </div>
           )}
         </div>
-        <div className={dialog("FieldChildrenWithIcon")}>
-          <div className={dialog("FieldChildrenInner")}>
-            <div className={cx(slider("SliderControlPanelGroup"), "SliderControlPanelGroup", "Panel", "Focusable", focused && "gpfocus gpfocuswithin")}>
-              <div
-                role="slider"
-                aria-valuenow={value}
-                aria-valuemin={min}
-                aria-valuemax={max}
-                className={cx(slider("SliderControlAndNotches"), resetValue !== undefined && slider("WithDefaultValue"), disabled && slider("Disabled"), "Focusable")}
-                style={sliderVars as React.CSSProperties}
-              >
-                <div className={cx(slider("SliderControl"), "SliderControl")}>
-                  <div className={cx(slider("SliderTrack"), "SliderTrack")} />
-                  <div className={cx(slider("SliderHandleContainer"), "SliderHandleContainer")}>
-                    <div className={cx(slider("SliderHandle"), "SliderHandle")} />
-                  </div>
-                </div>
-                {input}
-              </div>
-            </div>
+        <div className={cx("mk-slider", disabled && "mk-disabled")} style={{ "--n": normalized } as CSSProperties}>
+          <div className="mk-slider-control">
+            <div className="mk-slider-track" />
+            <div className="mk-slider-handle" />
           </div>
+          <SliderHit
+            label={typeof label === "string" ? label : undefined}
+            value={value}
+            min={min}
+            max={max}
+            step={step}
+            disabled={disabled}
+            onChange={onChange}
+            bind={bind}
+          />
         </div>
-        {description && <div className={dialog("FieldDescription")}>{description}</div>}
+        {description && <div className="mk-desc">{description}</div>}
       </div>
     </div>
   );
 }
 
-// --- buttons, navigation and dialog pieces --------------------------------------------------------
+// --- buttons and fields -----------------------------------------------------------------------
 
 interface ButtonItemProps {
   children?: ReactNode;
@@ -350,53 +232,13 @@ interface ButtonItemProps {
 
 export function ButtonItem({ children, description, disabled, onClick }: ButtonItemProps) {
   const { focused, bind } = useFocus();
-  const markFocusable = useContext(RowContext);
-  useEffect(() => markFocusable?.(), [markFocusable]);
-
-  if (!real) {
-    return (
-      <div className="approx-field">
-        <button type="button" className="approx-button" disabled={disabled} onClick={onClick}>
+  return (
+    <div className={cx("mk-field", "mk-highlight", focused && "mk-focused")}>
+      <div className="mk-left">
+        <button type="button" className={cx("mk-button", focused && "mk-focused")} disabled={disabled} onClick={onClick} {...bind}>
           {children}
         </button>
-        {description && <div className="approx-desc">{description}</div>}
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={cx(
-        dialog("Field"),
-        dialog("Classic"),
-        dialog("VerticalAlignCenter"),
-        dialog("WithBottomSeparatorStandard"),
-        dialog("WithChildrenBelow"),
-        dialog("ExtraPaddingOnChildrenBelow"),
-        dialog("StandardPadding"),
-        dialog("HighlightOnFocus"),
-        "Panel",
-        "Focusable",
-        focused && "gpfocuswithin",
-      )}
-      style={{ "--indent-level": 0 } as CSSProperties}
-    >
-      <div className={dialog("FieldLeftColumn")}>
-        <div className={dialog("FieldChildrenWithIcon")}>
-          <div className={dialog("FieldChildrenInner")}>
-            <button
-              type="button"
-              role="button"
-              disabled={disabled}
-              className={cx("DialogButton", "_DialogLayout", "Secondary", dialog("Button"), "Focusable", focused && "gpfocus")}
-              onClick={onClick}
-              {...bind}
-            >
-              {children}
-            </button>
-          </div>
-        </div>
-        {description && <div className={dialog("FieldDescription")}>{description}</div>}
+        {description && <div className="mk-desc">{description}</div>}
       </div>
     </div>
   );
@@ -406,7 +248,6 @@ export function ButtonItem({ children, description, disabled, onClick }: ButtonI
 export function Focusable({ children, style, onCancel }: { children?: ReactNode; style?: CSSProperties; onCancel?(): void; noFocusRing?: boolean }) {
   return (
     <div
-      className="Panel Focusable"
       style={style}
       tabIndex={-1}
       onKeyDown={(event) => {
@@ -415,6 +256,64 @@ export function Focusable({ children, style, onCancel }: { children?: ReactNode;
     >
       {children}
     </div>
+  );
+}
+
+interface FieldProps {
+  label?: ReactNode;
+  description?: ReactNode;
+  children?: ReactNode;
+  bottomSeparator?: "standard" | "thick" | "none";
+  focusable?: boolean;
+  onActivate?(event: unknown): void;
+  onClick?(event: unknown): void;
+}
+
+// A generic row: an optional label and description, optionally focusable and clickable.
+export function Field({ label, description, children, bottomSeparator = "standard", focusable, onActivate, onClick }: FieldProps) {
+  const { focused, bind } = useFocus();
+  const activate = (event: unknown) => (onClick ?? onActivate)?.(event);
+
+  return (
+    <div
+      className={cx(
+        "mk-field",
+        "mk-highlight",
+        bottomSeparator === "none" && "mk-no-separator",
+        focusable && "mk-clickable",
+        focused && "mk-focused",
+      )}
+      role={focusable ? "button" : undefined}
+      tabIndex={focusable ? 0 : undefined}
+      onClick={activate}
+      onKeyDown={(event) => {
+        if (focusable && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          activate(event);
+        }
+      }}
+      {...bind}
+    >
+      <div className="mk-left">
+        {label && (
+          <div className="mk-label-row">
+            <div className="mk-label">{label}</div>
+          </div>
+        )}
+        {children}
+        {description && <div className="mk-desc">{description}</div>}
+      </div>
+    </div>
+  );
+}
+
+// A push button as used inside pages (Steam's DialogButton).
+export function DialogButton({ children, style, onClick }: { children?: ReactNode; style?: CSSProperties; onClick?(event: unknown): void }) {
+  const { focused, bind } = useFocus();
+  return (
+    <button type="button" className={cx("mk-button", focused && "mk-focused")} style={style} onClick={onClick} {...bind}>
+      {children}
+    </button>
   );
 }
 
@@ -433,104 +332,12 @@ export const DialogControlsSection = ({ children }: { children?: ReactNode }) =>
 export const DialogControlsSectionHeader = ({ children }: { children?: ReactNode }) => <div className="preview-dialog-header">{children}</div>;
 export const DialogBodyText = ({ children }: { children?: ReactNode }) => <div className="preview-dialog-text">{children}</div>;
 
-interface FieldProps {
-  label?: ReactNode;
-  description?: ReactNode;
-  children?: ReactNode;
-  bottomSeparator?: "standard" | "thick" | "none";
-  focusable?: boolean;
-  onActivate?(event: unknown): void;
-  onClick?(event: unknown): void;
-}
-
-// A generic row: an optional label and description, optionally focusable and clickable.
-export function Field({ label, description, children, bottomSeparator = "standard", focusable, onActivate, onClick }: FieldProps) {
-  const { focused, bind } = useFocus();
-  const markFocusable = useContext(RowContext);
-  useEffect(() => {
-    if (focusable) markFocusable?.();
-  }, [focusable, markFocusable]);
-  const activate = (event: unknown) => (onClick ?? onActivate)?.(event);
-
-  if (!real) {
-    return (
-      <div className="approx-field" role={focusable ? "button" : undefined} tabIndex={focusable ? 0 : undefined} onClick={activate}>
-        {label && <div className="approx-label">{label}</div>}
-        {children}
-        {description && <div className="approx-desc">{description}</div>}
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={cx(
-        dialog("Field"),
-        dialog("Classic"),
-        dialog("VerticalAlignCenter"),
-        bottomSeparator === "standard" && dialog("WithBottomSeparatorStandard"),
-        dialog("ExtraPaddingOnChildrenBelow"),
-        dialog("StandardPadding"),
-        focusable && dialog("Clickable"),
-        dialog("HighlightOnFocus"),
-        "Panel",
-        "Focusable",
-        focused && "gpfocuswithin",
-      )}
-      style={{ "--indent-level": 0 } as CSSProperties}
-      role={focusable ? "button" : undefined}
-      tabIndex={focusable ? 0 : undefined}
-      onClick={activate}
-      onKeyDown={(event) => {
-        if (focusable && (event.key === "Enter" || event.key === " ")) {
-          event.preventDefault();
-          activate(event);
-        }
-      }}
-      {...bind}
-    >
-      <div className={dialog("FieldLeftColumn")}>
-        {label && (
-          <div className={dialog("FieldLabelRow")}>
-            <div className={dialog("FieldLabel")}>{label}</div>
-          </div>
-        )}
-        {children}
-        {description && <div className={dialog("FieldDescription")}>{description}</div>}
-      </div>
-    </div>
-  );
-}
-
-// A small push button as used inside pages (Steam's DialogButton).
-export function DialogButton({ children, style, onClick }: { children?: ReactNode; style?: CSSProperties; onClick?(event: unknown): void }) {
-  const { focused, bind } = useFocus();
-  if (!real) {
-    return (
-      <button type="button" className="approx-button" style={{ ...style, width: style?.width ?? "100%" }} onClick={onClick}>
-        {children}
-      </button>
-    );
-  }
-  return (
-    <button
-      type="button"
-      role="button"
-      className={cx("DialogButton", "_DialogLayout", "Secondary", dialog("Button"), "Focusable", focused && "gpfocus")}
-      style={style}
-      onClick={onClick}
-      {...bind}
-    >
-      {children}
-    </button>
-  );
-}
 
 // --- scroll window pieces ------------------------------------------------------------------------
 
-// Class names of Steam's scroll panel and dialog positioning (approximations without a capture).
-export const scrollPanelClasses = { ScrollPanel: real ? scrollClass("ScrollPanel") : "approx-scroll-panel" };
-export const gamepadDialogClasses = { ModalPosition: dialog("ModalPosition"), WithStandardPadding: dialog("WithStandardPadding") };
+// Class names the panel's own CSS refers to (Steam's scroll panel and dialog positioning).
+export const scrollPanelClasses = { ScrollPanel: "mk-scroll-panel" };
+export const gamepadDialogClasses = { ModalPosition: "mk-modal-position", WithStandardPadding: "mk-standard-padding" };
 
 // Steam's ModalPosition fills the space it is given, which is what makes its scroll panel scroll.
 export function ModalPosition({ children }: { children?: ReactNode }) {

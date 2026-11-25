@@ -1,0 +1,287 @@
+/* An imitation of how Steam's quick access menu looks, for the browser preview only.
+ *
+ * The sizes, spacing and colors were measured from the preview as it looked with Steam's own styles, then
+ * written down here with class names of our own (mk-*). It is not Steam's CSS and does not try to cover
+ * everything: only what the panel and the info page use. */
+
+:root {
+  --mk-text: #dcdedf;
+  --mk-text-dim: #b8bcbf;
+  --mk-accent: #1a9fff;
+  --mk-disabled: #67707b;
+  --mk-line: rgba(255, 255, 255, 0.1);
+  --mk-fill: rgba(255, 255, 255, 0.15);
+  --mk-highlight: rgba(255, 255, 255, 0.153);
+}
+
+/* A section: the rows sit 16px in from the panel edge; Steam leaves 24px below every section. */
+.mk-section {
+  margin-bottom: 24px;
+  padding: 0 16px;
+  color: var(--mk-text);
+}
+
+.mk-section-title {
+  padding: 4px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--mk-text-dim);
+}
+
+.mk-row {
+  display: block;
+}
+
+/* A field reaches out to the panel edges (so its highlight covers the full width) and keeps its content
+ * 16px in. Its separator is a line along the bottom, drawn by ::after. */
+.mk-field {
+  position: relative;
+  display: flex;
+  margin: 0 -16px;
+  padding: 10px 16px;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.mk-field::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: -0.5px;
+  height: 1px;
+  background: var(--mk-line);
+}
+
+.mk-field.mk-no-separator::after {
+  display: none;
+}
+
+.mk-field.mk-clickable {
+  cursor: pointer;
+}
+
+.mk-field.mk-focused,
+.mk-field.mk-highlight.mk-clickable:hover {
+  background: var(--mk-highlight);
+}
+
+.mk-field.mk-focused .mk-desc {
+  color: var(--mk-text);
+}
+
+.mk-left {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mk-right {
+  flex: 0 0 auto;
+}
+
+.mk-label-row {
+  display: flex;
+  align-items: center;
+}
+
+.mk-label {
+  flex: 1 1 auto;
+  font-size: 16px;
+  line-height: 20px;
+  word-break: break-word;
+}
+
+.mk-value {
+  font-size: 14px;
+  color: var(--mk-text);
+}
+
+.mk-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--mk-text-dim);
+}
+
+/* Toggle: a 38 by 22 rail with a round knob; the rail fills with the accent color from the left. */
+.mk-toggle-holder {
+  display: flex;
+}
+
+.mk-toggle {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  margin-right: 4px;
+  border-radius: 16px;
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow 0.05s ease-out;
+}
+
+.mk-toggle.mk-focused {
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+.mk-toggle-rail {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 9001px;
+  background: var(--mk-fill);
+}
+
+.mk-toggle-rail::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--mk-accent);
+  transform: translateX(-38px);
+  transition: transform 0.2s ease;
+}
+
+.mk-toggle.mk-on .mk-toggle-rail::before {
+  transform: translateX(-11px);
+}
+
+.mk-toggle.mk-disabled .mk-toggle-rail::before {
+  background: var(--mk-disabled);
+}
+
+.mk-toggle.mk-disabled {
+  cursor: default;
+}
+
+.mk-toggle-knob {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 9001px;
+  background: #fff;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s cubic-bezier(0.1, 0.12, 0.53, 1.72);
+}
+
+.mk-toggle.mk-on .mk-toggle-knob {
+  transform: translateX(16px);
+}
+
+/* Slider: a 6px track, filled with the accent color up to the value, and a 24px handle whose center
+ * travels between half a handle width from each end of the track. --n is the value from 0 to 1. */
+.mk-slider {
+  position: relative;
+  margin: 7px 0 6px; /* collapses with the description's 4px, so the gap below is 6px */
+  padding-top: 4px;
+  height: 28px;
+}
+
+.mk-slider-control {
+  position: relative;
+  display: flex;
+  height: 24px;
+  cursor: pointer;
+}
+
+.mk-slider-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 6px;
+  margin: 9px 0;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--mk-fill);
+}
+
+.mk-slider-track::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(var(--n) * 100%);
+  border-radius: 3px;
+  background: var(--mk-accent);
+}
+
+.mk-slider-handle {
+  position: absolute;
+  top: 0;
+  left: calc(var(--n) * (100% - 24px));
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.35);
+}
+
+.mk-slider.mk-disabled .mk-slider-track::before {
+  background: var(--mk-disabled);
+}
+
+.mk-slider.mk-disabled .mk-slider-control {
+  cursor: default;
+}
+
+/* The invisible layer that takes the mouse and the keyboard (see SliderHit in decky-ui.tsx). */
+.preview-slider-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  outline: none;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.preview-slider-input[aria-disabled="true"] {
+  cursor: default;
+}
+
+/* Buttons: 40px tall, a faint fill that turns white (with dark text) on hover or focus. */
+.mk-button {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 10px 24px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--mk-fill);
+  color: var(--mk-text);
+  font: inherit;
+  font-size: 16px;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+}
+
+.mk-button:hover,
+.mk-button.mk-focused {
+  background: #fff;
+  color: #23262e;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* A page that scrolls with its content: the thin scrollbar the panel's own CSS colors. */
+.mk-scroll-panel {
+  overflow-y: auto;
+}
+
+.mk-scroll-panel::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+}
+
+/* Steam's ModalPosition fills the box it is placed in, which is what limits the height of a scroll panel
+ * inside it (the panel's own CSS adjusts it further). */
+.mk-modal-position {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}

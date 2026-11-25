@@ -3,10 +3,12 @@ import {
   DialogBodyText,
   DialogButton,
   DialogControlsSection,
-  DialogControlsSectionHeader,
+  DialogControlsSectionHeader as SteamSectionHeader,
   Focusable,
   Navigation,
 } from "@decky/ui";
+
+import type { ReactNode } from "react";
 
 import { RepositoryIcon } from "./icon";
 import { pluginInfo } from "./info";
@@ -16,12 +18,21 @@ import { strings } from "./strings";
 // Route of the info page. It is registered in index.tsx and opened by the "Plugin Info" button.
 export const infoRoute = "/streamhdr-info";
 
+// Steam draws section headings in capital letters; the texts here are written as they should be read.
+function SectionHeader({ children }: { children: ReactNode }) {
+  return (
+    <SteamSectionHeader>
+      <span style={{ textTransform: "none" }}>{children}</span>
+    </SteamSectionHeader>
+  );
+}
+
 // A section that only exists in languages which provide its texts.
 function OptionalSection({ heading, items }: { heading?: string; items?: string[] }) {
   if (!heading || !items?.length) return null;
   return (
     <DialogControlsSection>
-      <DialogControlsSectionHeader>{heading}</DialogControlsSectionHeader>
+      <SectionHeader>{heading}</SectionHeader>
       <Bullets items={items} />
     </DialogControlsSection>
   );
@@ -52,31 +63,33 @@ export function InfoPage() {
       >
         <DialogBody>
           <DialogControlsSection>
-            <DialogControlsSectionHeader>{strings.pluginName}</DialogControlsSectionHeader>
+            <SectionHeader>{strings.pluginName}</SectionHeader>
             <DialogBodyText>{info.about}</DialogBodyText>
           </DialogControlsSection>
           <DialogControlsSection>
-            <DialogControlsSectionHeader>{info.usageHeading}</DialogControlsSectionHeader>
+            <SectionHeader>{info.usageHeading}</SectionHeader>
             <Bullets items={info.usage} />
           </DialogControlsSection>
           <OptionalSection heading={info.requirementsHeading} items={info.requirements} />
           <DialogControlsSection>
-            <DialogControlsSectionHeader>{info.hostHeading}</DialogControlsSectionHeader>
+            <SectionHeader>{info.hostHeading}</SectionHeader>
             <Bullets items={info.host} />
           </DialogControlsSection>
           <OptionalSection heading={info.clientHeading} items={info.client} />
           <DialogControlsSection>
-            <DialogControlsSectionHeader>{info.detailsHeading}</DialogControlsSectionHeader>
+            <SectionHeader>{info.detailsHeading}</SectionHeader>
             <DialogBodyText>{`${info.version}: ${pluginInfo.version}`}</DialogBodyText>
             <DialogBodyText>{`${info.author}: ${pluginInfo.author}`}</DialogBodyText>
             <DialogBodyText>{`${info.license}: ${pluginInfo.license}`}</DialogBodyText>
-            {/* A small button at the right edge, like the repository links of other plugins. */}
+            {/* A button at the right edge: as tall as Steam's own buttons (like Reset All Settings), but only as wide as its content. */}
             <Focusable style={{ display: "flex", justifyContent: "flex-end" }}>
               <DialogButton
                 onClick={() => Navigation.NavigateToExternalWeb(pluginInfo.repositoryUrl)}
-                style={{ width: "auto", minWidth: "auto", padding: "0 16px", minHeight: "30px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "8px" }}
+                style={{ width: "auto", minWidth: "auto", paddingLeft: "28px", paddingRight: "28px", display: "inline-flex", alignItems: "center" }}
               >
-                <RepositoryIcon />
+                <span style={{ display: "inline-flex", marginRight: "10px" }}>
+                  <RepositoryIcon />
+                </span>
                 {strings.githubButton}
               </DialogButton>
             </Focusable>
