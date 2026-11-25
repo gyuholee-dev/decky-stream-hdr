@@ -5,6 +5,6 @@
   "api_version": 1,
   "publish": {
     "tags": ["streaming", "hdr", "display"],
-    "description": "Enables real HDR for Steam Remote Play on Linux clients."
+    "description": "StreamHDR is a Decky plugin that brings BT.2020 PQ HDR streaming to Steam Remote Play."
   }
 }
