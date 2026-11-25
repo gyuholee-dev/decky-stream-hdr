@@ -31,7 +31,8 @@ export const en = {
   resetButton: "Reset All Settings",
   resetTitle: "Reset all settings",
   resetDescription:
-    "Sets Paper White, Contrast, Gamma and Saturation back to their defaults and turns HDR streaming off.",
+    "Sets Paper White, Contrast, Gamma and Saturation back to their defaults, and turns HDR streaming on. " +
+    "While streaming, HDR streaming and Paper White stay as they are.",
   resetConfirmButton: "Reset",
   // Texts of the info page that the "Plugin Info" button opens.
   info: {

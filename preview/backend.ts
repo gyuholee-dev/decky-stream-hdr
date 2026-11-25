@@ -27,19 +27,19 @@ export const knobs = {
 };
 
 const state: PreviewStatus = {
-  hdr_enabled: false,
+  hdr_enabled: true,
   hdr_active: false,
   saturation: 100,
-  paper_white: 200,
+  paper_white: 230,
   contrast: 100,
   gamma: 100,
   streaming: false,
   wrapper: {
     client_found: true,
-    wrapped: false,
-    original_saved: false,
-    shim_installed: false,
-    enabled: false,
+    wrapped: true,
+    original_saved: true,
+    shim_installed: true,
+    enabled: true,
   },
   error: null,
   look_error: null,
@@ -68,8 +68,12 @@ const handlers: Record<string, (...args: any[]) => PreviewStatus> = {
     return handlers.get_status();
   },
   reset_settings: () => {
-    Object.assign(state, { paper_white: 200, contrast: 100, gamma: 100, saturation: 100, hdr_enabled: false });
-    state.wrapper = { ...state.wrapper, enabled: false };
+    // While streaming, HDR streaming and Paper White stay as they are.
+    Object.assign(state, { contrast: 100, gamma: 100, saturation: 100 });
+    if (!state.streaming) {
+      Object.assign(state, { paper_white: 230, hdr_enabled: true });
+      state.wrapper = { ...state.wrapper, wrapped: true, original_saved: true, shim_installed: true, enabled: true };
+    }
     return handlers.get_status();
   },
   set_paper_white: (nits: number) => {

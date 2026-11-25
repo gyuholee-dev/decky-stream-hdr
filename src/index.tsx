@@ -15,7 +15,7 @@ const SCROLL_PADDING = "16px";
 const PAPER_WHITE_MIN = 80;
 const PAPER_WHITE_MAX = 480;
 const PAPER_WHITE_STEP = 10;
-const PAPER_WHITE_DEFAULT = 200;
+const PAPER_WHITE_DEFAULT = 230;
 
 const CONTRAST_MIN = 0;
 const CONTRAST_MAX = 200;
@@ -113,6 +113,7 @@ function Panel() {
             label={strings.hdrToggleLabel}
             description={<KeepAll>{strings.hdrToggleDescription}</KeepAll>}
             checked={status.hdr_enabled}
+            disabled={status.streaming}
             onChange={(enabled: boolean) => {
               setHdrEnabled(enabled)
                 .then(setStatus)
@@ -130,6 +131,7 @@ function Panel() {
             label={strings.paperWhiteLabel}
             description={<KeepAll>{strings.paperWhiteDescription}</KeepAll>}
             value={status.paper_white}
+            disabled={status.streaming}
             min={PAPER_WHITE_MIN}
             max={PAPER_WHITE_MAX}
             step={PAPER_WHITE_STEP}

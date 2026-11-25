@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 DEFAULTS: Dict[str, Any] = {
-    "hdr_enabled": False,
+    "hdr_enabled": True,
     "saturation": 100,  # percent; 100 means no change
-    "paper_white": 200,  # nits
+    "paper_white": 230,  # nits
     "contrast": 100,  # percent; 100 means no change
     "gamma": 100,  # hundredths; 100 means 1.00 (no change)
 }
@@ -44,8 +44,10 @@ class Settings:
         self._values[key] = value
         self._save()
 
-    def reset(self) -> None:
+    def reset(self, keep: Optional[Dict[str, Any]] = None) -> None:
+        """Back to the defaults, except for the values in `keep`."""
         self._values = dict(DEFAULTS)
+        self._values.update(keep or {})
         self._save()
 
     def _save(self) -> None:

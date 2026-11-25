@@ -30,8 +30,8 @@ class ControllerPaperWhiteTests(WrapperTestCase):
     def test_default_is_written_at_start(self):
         controller = self.make()
         controller.start()
-        self.assertEqual(self.read_file(), "200")
-        self.assertEqual(controller.status()["paper_white"], 200)
+        self.assertEqual(self.read_file(), "230")
+        self.assertEqual(controller.status()["paper_white"], 230)
 
     def test_new_value_is_snapped_saved_and_written(self):
         controller = self.make()
@@ -75,7 +75,7 @@ class ControllerPaperWhiteTests(WrapperTestCase):
 
     def test_reset_settings_restores_every_default(self):
         controller = self.make()
-        controller.set_hdr_enabled(True)
+        controller.set_hdr_enabled(False)
         controller.set_paper_white(250)
         controller.set_contrast(120)
         controller.set_gamma(80)
@@ -83,10 +83,10 @@ class ControllerPaperWhiteTests(WrapperTestCase):
         status = controller.reset_settings()
         self.assertEqual(
             (status["hdr_enabled"], status["paper_white"], status["contrast"], status["gamma"], status["saturation"]),
-            (False, 200, 100, 100, 100),
+            (True, 230, 100, 100, 100),
         )
-        self.assertEqual(self.read_file(), "200")
-        self.assertFalse(status["wrapper"]["enabled"])
+        self.assertEqual(self.read_file(), "230")
+        self.assertTrue(status["wrapper"]["enabled"])
 
     def test_reset_while_streaming_takes_the_look_off(self):
         controller = self.make()
@@ -95,6 +95,20 @@ class ControllerPaperWhiteTests(WrapperTestCase):
         self.assertIsNotNone(controller.gs.look)
         controller.reset_settings()
         self.assertIsNone(controller.gs.look)
+
+    def test_reset_while_streaming_keeps_the_frozen_options(self):
+        controller = self.make()
+        controller.set_hdr_enabled(True)
+        controller.set_paper_white(250)
+        controller.on_streaming_changed(True)
+        controller.set_contrast(120)
+        controller.set_saturation(150)
+        status = controller.reset_settings()
+        self.assertTrue(status["hdr_enabled"])
+        self.assertEqual(status["paper_white"], 250)
+        self.assertEqual((status["contrast"], status["gamma"], status["saturation"]), (100, 100, 100))
+        self.assertEqual(self.read_file(), "250")
+        self.assertTrue(status["wrapper"]["enabled"])
 
     def test_uninstall_removes_the_file(self):
         controller = self.make()

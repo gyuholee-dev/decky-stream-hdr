@@ -12,6 +12,10 @@ from .paths import Paths
 from .settings import Settings
 
 
+# Settings that only apply when a stream starts, so they are left alone while one is running.
+FROZEN_WHILE_STREAMING = ("hdr_enabled", "paper_white")
+
+
 class Controller:
     def __init__(
         self,
@@ -64,13 +68,17 @@ class Controller:
             self.log.error("Cleanup failed: %s", exc)
 
     def reset_settings(self) -> Dict[str, Any]:
-        """The Reset All Settings button: every option back to its default, HDR streaming off."""
-        self.settings.reset()
+        """The Reset All Settings button: every option back to its default.
+
+        While a stream is running the options that only apply at the next connection stay as they are."""
+        keep = {key: self.settings.get(key) for key in FROZEN_WHILE_STREAMING} if self.streaming else {}
+        self.settings.reset(keep)
         self.look_error = None
         self.apply_paper_white()
-        self.apply_hdr(False)
+        if not self.streaming:
+            self.apply_hdr(self.settings.get("hdr_enabled"))
         if self.streaming:
-            self.apply_look()  # all neutral now, so this takes the color table off
+            self.apply_look()  # takes the color table off when everything is back to unchanged
         return self.status()
 
     # -- HDR toggle ------------------------------------------------------

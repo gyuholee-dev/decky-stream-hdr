@@ -2,7 +2,7 @@ import json
 import os
 import unittest
 
-from streamhdr import gamescope, look, wrapper
+from streamhdr import gamescope, look, paperwhite, wrapper
 from streamhdr.controller import Controller
 from streamhdr.settings import Settings
 
@@ -14,23 +14,23 @@ class SettingsTests(WrapperTestCase):
         return os.path.join(self.tmp, "settings", "settings.json")
 
     def test_defaults_when_file_is_missing(self):
-        self.assertFalse(Settings(self.path()).get("hdr_enabled"))
+        self.assertTrue(Settings(self.path()).get("hdr_enabled"))
 
     def test_values_persist(self):
-        Settings(self.path()).set("hdr_enabled", True)
-        self.assertTrue(Settings(self.path()).get("hdr_enabled"))
+        Settings(self.path()).set("hdr_enabled", False)
+        self.assertFalse(Settings(self.path()).get("hdr_enabled"))
 
     def test_damaged_file_falls_back_to_defaults(self):
         os.makedirs(os.path.dirname(self.path()))
         with open(self.path(), "w") as handle:
             handle.write("{not json")
-        self.assertFalse(Settings(self.path()).get("hdr_enabled"))
+        self.assertTrue(Settings(self.path()).get("hdr_enabled"))
 
     def test_wrong_type_is_ignored(self):
         os.makedirs(os.path.dirname(self.path()))
         with open(self.path(), "w") as handle:
             json.dump({"hdr_enabled": "yes"}, handle)
-        self.assertFalse(Settings(self.path()).get("hdr_enabled"))
+        self.assertTrue(Settings(self.path()).get("hdr_enabled"))
 
     def test_unknown_key_is_rejected(self):
         with self.assertRaises(KeyError):
@@ -94,8 +94,14 @@ class ControllerTests(WrapperTestCase):
         self.assertTrue(controller.status()["wrapper"]["wrapped"])
         self.assertTrue(controller.status()["wrapper"]["enabled"])
 
+    def test_start_with_default_settings_installs_the_wrapper(self):
+        controller = self.make()
+        controller.start()
+        self.assertTrue(controller.status()["wrapper"]["wrapped"])
+
     def test_start_with_hdr_off_leaves_client_untouched(self):
         controller = self.make()
+        controller.settings.set("hdr_enabled", False)
         controller.start()
         self.assertFalse(controller.status()["wrapper"]["wrapped"])
         with open(self.paths.client, "rb") as handle:
@@ -132,7 +138,7 @@ class SaturationTests(WrapperTestCase):
         return Controller(self.paths, settings, gamescope_api=self.gs)
 
     def lut(self, percent):
-        return os.path.join(self.paths.luts_dir, look.lut_filename(look.Look(percent, 100, 100, 200)))
+        return os.path.join(self.paths.luts_dir, look.lut_filename(look.Look(percent, 100, 100, paperwhite.PAPER_WHITE_DEFAULT)))
 
     def test_value_is_snapped_stored_and_lut_prepared(self):
         controller = self.make()
@@ -254,6 +260,7 @@ class MaintainTests(WrapperTestCase):
 
     def test_does_nothing_when_hdr_is_off(self):
         controller = self.make()
+        controller.settings.set("hdr_enabled", False)
         controller.maintain()
         self.assertFalse(controller.status()["wrapper"]["wrapped"])
 
@@ -273,7 +280,7 @@ class MaintainTests(WrapperTestCase):
         controller.on_streaming_changed(True)
         self.gs.look = None  # for example gamescope restarted
         controller.maintain()
-        self.assertEqual(self.gs.look, os.path.join(self.paths.luts_dir, look.lut_filename(look.Look(150, 100, 100, 200))))
+        self.assertEqual(self.gs.look, os.path.join(self.paths.luts_dir, look.lut_filename(look.Look(150, 100, 100, paperwhite.PAPER_WHITE_DEFAULT))))
 
     def test_leaves_a_correct_color_table_alone(self):
         controller = self.make()

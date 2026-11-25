@@ -10,7 +10,7 @@ import os
 PAPER_WHITE_MIN = 80
 PAPER_WHITE_MAX = 480
 PAPER_WHITE_STEP = 10
-PAPER_WHITE_DEFAULT = 200  # nits; 200-230 is recommended for a display with a 1000 nit peak
+PAPER_WHITE_DEFAULT = 230  # nits; 200-230 is recommended for a display with a 1000 nit peak
 
 
 def clamp_nits(value: int) -> int:
