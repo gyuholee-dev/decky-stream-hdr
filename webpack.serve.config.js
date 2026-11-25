@@ -43,6 +43,7 @@ export default {
       "@decky/api": path.join(root, "preview", "mocks", "decky-api.ts"),
       "steam-ui-classes": path.join(steamUi, "classes.json"),
       "steam-ui.css": path.join(steamUi, "steam.css"),
+      "streamhdr-options": path.join(root, "py_modules", "streamhdr", "options.json"),
     },
   },
   module: {

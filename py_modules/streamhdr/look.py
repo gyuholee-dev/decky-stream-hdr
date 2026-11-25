@@ -14,11 +14,9 @@ import math
 import os
 from typing import List, NamedTuple, Sequence
 
-LUT_SIZE = 17  # gamescope's internal 3D LUT size
+from .options import LOOK_OPTIONS, SPEC
 
-SATURATION_MIN, SATURATION_MAX, SATURATION_STEP, SATURATION_DEFAULT = 0, 200, 5, 100  # percent
-CONTRAST_MIN, CONTRAST_MAX, CONTRAST_STEP, CONTRAST_DEFAULT = 0, 200, 5, 100  # percent
-GAMMA_MIN, GAMMA_MAX, GAMMA_STEP, GAMMA_DEFAULT = 50, 200, 5, 100  # hundredths: 100 means 1.00
+LUT_SIZE = 17  # gamescope's internal 3D LUT size
 
 # Gamma fades out between the pivot and this many times the pivot.
 GAMMA_FADE_RATIO = 4.0
@@ -40,29 +38,8 @@ class Look(NamedTuple):
 
     @property
     def is_neutral(self) -> bool:
-        return (
-            self.saturation == SATURATION_DEFAULT
-            and self.contrast == CONTRAST_DEFAULT
-            and self.gamma == GAMMA_DEFAULT
-        )
-
-
-def snap(value: int, minimum: int, maximum: int, step: int) -> int:
-    """Snap to the slider grid and keep inside the allowed range."""
-    snapped = int(round(value / step)) * step
-    return max(minimum, min(maximum, snapped))
-
-
-def clamp_saturation(value: int) -> int:
-    return snap(value, SATURATION_MIN, SATURATION_MAX, SATURATION_STEP)
-
-
-def clamp_contrast(value: int) -> int:
-    return snap(value, CONTRAST_MIN, CONTRAST_MAX, CONTRAST_STEP)
-
-
-def clamp_gamma(value: int) -> int:
-    return snap(value, GAMMA_MIN, GAMMA_MAX, GAMMA_STEP)
+        """True when nothing is changed, so no color table is needed."""
+        return all(getattr(self, name) == SPEC[name]["neutral"] for name in LOOK_OPTIONS)
 
 
 def decode_pq(encoded: float) -> float:

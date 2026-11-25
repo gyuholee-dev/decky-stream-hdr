@@ -6,14 +6,10 @@ import os
 import shutil
 from typing import Any, Callable, Dict, List, Optional
 
-from . import gamescope, look, paperwhite, wrapper
+from . import gamescope, look, options, paperwhite, wrapper
 from .errors import info_for
 from .paths import Paths
 from .settings import Settings
-
-
-# Settings that only apply when a stream starts, so they are left alone while one is running.
-FROZEN_WHILE_STREAMING = ("hdr_enabled", "paper_white")
 
 
 class Controller:
@@ -72,14 +68,29 @@ class Controller:
         """The Reset All Settings button: every option back to its default.
 
         While a stream is running the options that only apply at the next connection stay as they are."""
-        keep = {key: self.settings.get(key) for key in FROZEN_WHILE_STREAMING} if self.streaming else {}
+        keep = {name: self.settings.get(name) for name in options.FROZEN_WHILE_STREAMING} if self.streaming else {}
         self.settings.reset(keep)
-        self.look_error = None
         self.apply_paper_white()
         if not self.streaming:
             self.apply_hdr(self.settings.get("hdr_enabled"))
-        if self.streaming:
-            self.apply_look()  # takes the color table off when everything is back to unchanged
+        self._apply_look_setting()
+        return self.status()
+
+    # -- changing an option ------------------------------------------------
+
+    def set_option(self, name: str, value: Any) -> Dict[str, Any]:
+        """Applies one change from the panel. Unknown options and options that are frozen during a stream
+        are ignored; the reply shows the state as it is, so the panel can show that nothing changed."""
+        if name not in options.SPEC or (self.streaming and name in options.FROZEN_WHILE_STREAMING):
+            return self.status()
+        self.settings.set(name, options.snap(name, value))
+        if name == "hdr_enabled":
+            self.apply_hdr(self.settings.get(name))
+        elif name == "paper_white":
+            self.apply_paper_white()
+            self._apply_look_setting()  # contrast and gamma are centered on the paper white
+        else:
+            self._apply_look_setting()
         return self.status()
 
     # -- HDR toggle ------------------------------------------------------
@@ -102,19 +113,7 @@ class Controller:
             self.error = info_for("file_operation_failed", str(exc))
             self.log.error("File operation failed: %s", exc)
 
-    def set_hdr_enabled(self, enabled: bool) -> Dict[str, Any]:
-        self.settings.set("hdr_enabled", bool(enabled))
-        self.apply_hdr(bool(enabled))
-        return self.status()
-
     # -- paper white -----------------------------------------------------
-
-    def set_paper_white(self, nits: int) -> Dict[str, Any]:
-        self.settings.set("paper_white", paperwhite.clamp_nits(int(nits)))
-        self.apply_paper_white()
-        if self.streaming:
-            self.apply_look()  # contrast and gamma are centered on the paper white
-        return self.status()
 
     def apply_paper_white(self) -> None:
         """Write the saved paper white where the injected library reads it."""
@@ -148,7 +147,7 @@ class Controller:
                 self.log.info("Reinstalled the streaming client wrapper")
         self._changed()
 
-    # -- contrast, gamma and saturation ------------------------------------
+    # -- the color table (contrast, gamma, saturation) ----------------------
 
     def _look(self) -> look.Look:
         return look.Look(
@@ -158,17 +157,8 @@ class Controller:
             self.settings.get("paper_white"),
         )
 
-    def set_saturation(self, percent: int) -> Dict[str, Any]:
-        return self._set_look_value("saturation", look.clamp_saturation(int(percent)))
-
-    def set_contrast(self, percent: int) -> Dict[str, Any]:
-        return self._set_look_value("contrast", look.clamp_contrast(int(percent)))
-
-    def set_gamma(self, hundredths: int) -> Dict[str, Any]:
-        return self._set_look_value("gamma", look.clamp_gamma(int(hundredths)))
-
-    def _set_look_value(self, key: str, value: int) -> Dict[str, Any]:
-        self.settings.set(key, value)
+    def _apply_look_setting(self) -> None:
+        """A color option (or the paper white they are centered on) changed: use it now, or get it ready."""
         self.look_error = None
         if self.streaming:
             self.apply_look()
@@ -179,10 +169,9 @@ class Controller:
             except OSError as exc:
                 self.look_error = info_for("lut_failed", str(exc))
                 self.log.error("Could not create the color table: %s", exc)
-        return self.status()
 
     def on_streaming_changed(self, streaming: bool) -> None:
-        """Called by the watcher when a stream starts or ends."""
+        """Called when a stream starts or ends."""
         self.streaming = streaming
         self.log.info("Streaming %s", "started" if streaming else "ended")
         if streaming:

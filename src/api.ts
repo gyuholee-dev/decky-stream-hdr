@@ -2,6 +2,9 @@ import { callable } from "@decky/api";
 
 import type { ErrorInfo } from "./strings";
 
+// The names of the options: see py_modules/streamhdr/options.json.
+export type OptionName = "hdr_enabled" | "paper_white" | "contrast" | "gamma" | "saturation";
+
 export interface WrapperStatus {
   client_found: boolean;
   wrapped: boolean;
@@ -26,9 +29,5 @@ export interface Status {
 
 // Thin wrappers around backend methods defined in main.py.
 export const getStatus = callable<[], Status>("get_status");
-export const setHdrEnabled = callable<[enabled: boolean], Status>("set_hdr_enabled");
-export const setSaturation = callable<[percent: number], Status>("set_saturation");
-export const setPaperWhite = callable<[nits: number], Status>("set_paper_white");
-export const setContrast = callable<[percent: number], Status>("set_contrast");
-export const setGamma = callable<[hundredths: number], Status>("set_gamma");
+export const setOption = callable<[name: OptionName, value: number | boolean], Status>("set_option");
 export const resetSettings = callable<[], Status>("reset_settings");

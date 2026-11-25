@@ -68,20 +68,8 @@ class Plugin:
     async def get_status(self):
         return self.controller.status()
 
-    async def set_hdr_enabled(self, enabled: bool):
-        return await asyncio.get_running_loop().run_in_executor(None, self.controller.set_hdr_enabled, enabled)
-
-    async def set_saturation(self, percent: int):
-        return await asyncio.get_running_loop().run_in_executor(None, self.controller.set_saturation, percent)
-
-    async def set_paper_white(self, nits: int):
-        return await asyncio.get_running_loop().run_in_executor(None, self.controller.set_paper_white, nits)
-
-    async def set_contrast(self, percent: int):
-        return await asyncio.get_running_loop().run_in_executor(None, self.controller.set_contrast, percent)
-
-    async def set_gamma(self, hundredths: int):
-        return await asyncio.get_running_loop().run_in_executor(None, self.controller.set_gamma, hundredths)
+    async def set_option(self, name: str, value):
+        return await asyncio.get_running_loop().run_in_executor(None, self.controller.set_option, name, value)
 
     async def reset_settings(self):
         return await asyncio.get_running_loop().run_in_executor(None, self.controller.reset_settings)

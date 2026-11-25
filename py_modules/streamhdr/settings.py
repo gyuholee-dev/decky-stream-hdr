@@ -5,14 +5,7 @@ import json
 import os
 from typing import Any, Dict, Optional
 
-DEFAULTS: Dict[str, Any] = {
-    "hdr_enabled": True,
-    "saturation": 100,  # percent; 100 means no change
-    "paper_white": 230,  # nits
-    "contrast": 100,  # percent; 100 means no change
-    "gamma": 100,  # hundredths; 100 means 1.00 (no change)
-}
-
+from .options import DEFAULTS, is_valid
 
 class Settings:
     def __init__(self, path: str):
@@ -30,10 +23,8 @@ class Settings:
             return
         for key, default in DEFAULTS.items():
             value = stored.get(key, default)
-            # Ignore values of the wrong type (bool is an int subclass, so check it explicitly).
-            if isinstance(default, bool) != isinstance(value, bool) or not isinstance(value, type(default)):
-                continue
-            self._values[key] = value
+            if is_valid(key, value):  # a value of the wrong type is ignored
+                self._values[key] = value
 
     def get(self, key: str) -> Any:
         return self._values[key]

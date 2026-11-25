@@ -1,5 +1,7 @@
 // In-memory stand-in for the plugin backend, used only by the browser preview.
-// It mirrors the replies of main.py so the panel can be styled without a device.
+// It mirrors the replies of main.py so the panel can be styled without a device. The options
+// (ranges, steps, defaults, what is frozen during a stream) come from the same file as the real backend.
+import options from "streamhdr-options";
 
 export interface PreviewStatus {
   hdr_enabled: boolean;
@@ -26,13 +28,13 @@ export const knobs = {
   latencyMs: 150,
 };
 
+type OptionName = keyof typeof options;
+const optionNames = Object.keys(options) as OptionName[];
+const defaults = Object.fromEntries(optionNames.map((name) => [name, options[name].default])) as Pick<PreviewStatus, OptionName>;
+
 const state: PreviewStatus = {
-  hdr_enabled: true,
+  ...defaults,
   hdr_active: false,
-  saturation: 100,
-  paper_white: 230,
-  contrast: 100,
-  gamma: 100,
   streaming: false,
   wrapper: {
     client_found: true,
@@ -61,45 +63,41 @@ export function patchState(patch: Partial<PreviewStatus>) {
 }
 
 
-// The same grid as the real backend (see look.py and paperwhite.py).
-const snap = (value: number, min: number, max: number, step: number) => Math.max(min, Math.min(max, Math.round(value / step) * step));
+// What the real backend does with a request: put it on the grid and inside the range.
+const snap = (name: OptionName, value: number | boolean) => {
+  const spec = options[name];
+  if (typeof spec.default === "boolean") return Boolean(value);
+  const { min, max, step } = spec as { min: number; max: number; step: number };
+  return Math.max(min, Math.min(max, Math.round((Number(value) - min) / step) * step + min));
+};
+
+// The wrapper follows the HDR toggle, like the real backend installs and removes things.
+const followToggle = () => {
+  const on = state.hdr_enabled;
+  state.wrapper = {
+    ...state.wrapper,
+    wrapped: on || state.wrapper.wrapped,
+    original_saved: on || state.wrapper.original_saved,
+    shim_installed: on || state.wrapper.shim_installed,
+    enabled: on,
+  };
+};
+
+const frozen = (name: OptionName) => state.streaming && Boolean((options[name] as { frozenWhileStreaming?: boolean }).frozenWhileStreaming);
 
 const handlers: Record<string, (...args: any[]) => PreviewStatus> = {
   get_status: () => ({ ...state, hdr_active: state.streaming && state.hdr_enabled, wrapper: { ...state.wrapper } }),
-  set_hdr_enabled: (enabled: boolean) => {
-    state.hdr_enabled = enabled;
-    state.wrapper = {
-      ...state.wrapper,
-      wrapped: enabled || state.wrapper.wrapped,
-      original_saved: enabled || state.wrapper.original_saved,
-      shim_installed: enabled || state.wrapper.shim_installed,
-      enabled,
-    };
-    return handlers.get_status();
-  },
-  reset_settings: () => {
-    // While streaming, HDR streaming and Paper White stay as they are.
-    Object.assign(state, { contrast: 100, gamma: 100, saturation: 100 });
-    if (!state.streaming) {
-      Object.assign(state, { paper_white: 230, hdr_enabled: true });
-      state.wrapper = { ...state.wrapper, wrapped: true, original_saved: true, shim_installed: true, enabled: true };
+  set_option: (name: OptionName, value: number | boolean) => {
+    if (optionNames.includes(name) && !frozen(name)) {
+      Object.assign(state, { [name]: snap(name, value) });
+      if (name === "hdr_enabled") followToggle();
     }
     return handlers.get_status();
   },
-  set_paper_white: (nits: number) => {
-    state.paper_white = snap(nits, 80, 480, 10);
-    return handlers.get_status();
-  },
-  set_contrast: (percent: number) => {
-    state.contrast = snap(percent, 0, 200, 5);
-    return handlers.get_status();
-  },
-  set_gamma: (hundredths: number) => {
-    state.gamma = snap(hundredths, 50, 200, 5);
-    return handlers.get_status();
-  },
-  set_saturation: (percent: number) => {
-    state.saturation = snap(percent, 0, 200, 5);
+  reset_settings: () => {
+    // Everything goes back to its default, except what is frozen during a stream.
+    for (const name of optionNames) if (!frozen(name)) Object.assign(state, { [name]: defaults[name] });
+    followToggle();
     return handlers.get_status();
   },
 };

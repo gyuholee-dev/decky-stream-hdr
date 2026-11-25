@@ -46,7 +46,11 @@ export default {
   resolve: {
     extensions: [".tsx", ".ts", ".js"],
     // @decky/api reads the plugin name from this module.
-    alias: { "@decky/manifest": path.join(root, "plugin.json") },
+    alias: {
+      "@decky/manifest": path.join(root, "plugin.json"),
+      // The options (ranges, steps, defaults) are shared with the backend.
+      "streamhdr-options": path.join(root, "py_modules", "streamhdr", "options.json"),
+    },
   },
   module: {
     rules: [
