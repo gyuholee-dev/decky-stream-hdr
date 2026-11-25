@@ -28,6 +28,7 @@ class Controller:
         logger: Optional[logging.Logger] = None,
         gamescope_api: Any = gamescope,
         clock: Callable[[], float] = time.monotonic,
+        steam_running: Callable[[], bool] = lambda: True,
     ):
         self.paths = paths
         self.settings = settings
@@ -40,6 +41,7 @@ class Controller:
         self._listeners: List[Callable[[Dict[str, Any]], None]] = []
         self._look_applied = False  # True while the color LUT atom is set by us
         self._clock = clock
+        self.steam_running = steam_running  # the wrapper only goes in while Steam is up (see maintain)
         self._wrapped_before = False  # we have put the wrapper in place at least once in this run
         self._restores: Deque[float] = deque()  # when Steam put the original back after we had wrapped it
         self._gave_up = False
@@ -164,7 +166,7 @@ class Controller:
         """Called when the files the wrapper relies on changed and stayed quiet: Steam may have restored its
         own client. Puts the wrapper back, unless Steam keeps undoing it."""
         enabled = self.settings.get("hdr_enabled")
-        if not self._gave_up and wrapper.needs_attention(self.paths, enabled):
+        if not self._gave_up and self.steam_running() and wrapper.needs_attention(self.paths, enabled):
             if self._steam_restored_original() and self._too_many_restores():
                 self._give_up()
             else:
@@ -172,6 +174,17 @@ class Controller:
                 self.apply_hdr(enabled)
                 if self.error is None and previous is None:
                     self.log.info("Reinstalled the streaming client wrapper")
+        self._changed()
+
+    def on_steam_exited(self) -> None:
+        """A Steam client process ended (Steam is restarting or shutting down): put the original client back,
+        so that Steam's size check at its next start passes and it does not repair the file and restart."""
+        try:
+            if wrapper.restore(self.paths):
+                self.log.info("Steam ended; restored the original streaming client")
+        except OSError as exc:
+            self.log.error("Could not restore the streaming client: %s", exc)
+        self._wrapped_before = False  # our own restore is not Steam repairing the file
         self._changed()
 
     def _steam_restored_original(self) -> bool:

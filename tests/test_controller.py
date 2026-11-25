@@ -349,6 +349,30 @@ class MaintainTests(WrapperTestCase):
         self.assertIsNone(controller.status()["error"])
         self.assertTrue(controller.status()["wrapper"]["wrapped"])
 
+    def test_steam_ending_puts_the_original_back_and_the_next_install_is_not_a_restore(self):
+        controller = self.make_with_clock()
+        controller.set_option("hdr_enabled", True)
+        self.assertTrue(controller.status()["wrapper"]["wrapped"])
+        controller.on_steam_exited()
+        self.assertFalse(controller.status()["wrapper"]["wrapped"])
+        self.assertTrue(wrapper.is_elf(self.paths.client))
+        for _ in range(4):  # Steam restarts again and again, but the plugin keeps clear of its repairs
+            controller.maintain()
+            self.assertTrue(controller.status()["wrapper"]["wrapped"])
+            controller.on_steam_exited()
+            self.now += 25
+        self.assertIsNone(controller.status()["error"])
+
+    def test_the_wrapper_waits_for_steam_to_run(self):
+        controller = self.make_with_clock()
+        controller.steam_running = lambda: False
+        controller.start()
+        controller.maintain()
+        self.assertFalse(controller.status()["wrapper"]["wrapped"])
+        controller.steam_running = lambda: True
+        controller.maintain()
+        self.assertTrue(controller.status()["wrapper"]["wrapped"])
+
     def test_leaves_a_correct_color_table_alone(self):
         controller = self.make()
         controller.set_option("saturation", 150)

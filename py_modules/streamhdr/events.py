@@ -22,6 +22,8 @@ from typing import Callable, Dict, List, NamedTuple, Optional, Set
 from .paths import Paths
 
 CLIENT_NAMES = ("streaming_client", "streaming_client.real")
+STEAM_NAME = "steam"  # the Steam client process: .../steamrt64/steam
+STEAM_DIR = "steamrt64"
 
 # How long the wrapper's files must stay unchanged before the plugin checks them. Steam restarts itself about
 # 25 seconds after it repairs the client, so this has to be clearly longer than that.
@@ -120,6 +122,24 @@ def is_streaming_client(pid: int, proc_root: str = "/proc") -> bool:
     return os.path.basename(first.decode("utf-8", "replace")) in CLIENT_NAMES
 
 
+def is_steam_client(pid: int, proc_root: str = "/proc") -> bool:
+    """True for the Steam client itself (.../steamrt64/steam), not for its helpers or scripts."""
+    try:
+        with open(os.path.join(proc_root, str(pid), "cmdline"), "rb") as handle:
+            first = handle.read(4096).split(b"\0", 1)[0].decode("utf-8", "replace")
+    except OSError:
+        return False
+    return os.path.basename(first) == STEAM_NAME and os.path.basename(os.path.dirname(first)) == STEAM_DIR
+
+
+def find_steam_pids(proc_root: str = "/proc") -> List[int]:
+    try:
+        entries = os.listdir(proc_root)
+    except OSError:
+        return []
+    return [int(entry) for entry in entries if entry.isdigit() and is_steam_client(int(entry), proc_root)]
+
+
 def parse_start_event(text: str) -> Optional[int]:
     """The pid in a line like "start 1234" written by the wrapper, or None."""
     parts = text.split()
@@ -133,7 +153,10 @@ class Events:
 
     on_streaming(True/False) is called when a stream starts or ends.
     on_files_changed() is called once the files the wrapper relies on were created, changed or removed and
-    then stayed quiet for `debounce` seconds (every new change starts the wait again).
+    then stayed quiet for `debounce` seconds (every new change starts the wait again). While Steam is not
+    running it is called again after every quiet period, so the wrapper goes in once Steam is up.
+    on_steam_exit() is called when a Steam client process ends: Steam checks the streaming client's size
+    every time it starts, so the original has to be back in place before the next start.
     """
 
     def __init__(
@@ -142,6 +165,7 @@ class Events:
         loop: asyncio.AbstractEventLoop,
         on_streaming: Callable[[bool], None],
         on_files_changed: Callable[[], None],
+        on_steam_exit: Optional[Callable[[], None]] = None,
         logger: Optional[logging.Logger] = None,
         inotify_factory: Callable[..., Inotify] = Inotify,
         pidfd_open: Optional[Callable[[int], int]] = None,
@@ -152,6 +176,7 @@ class Events:
         self._loop = loop
         self._on_streaming = on_streaming
         self._on_files_changed = on_files_changed
+        self._on_steam_exit = on_steam_exit
         self._log = logger or logging.getLogger("streamhdr")
         self._inotify_factory = inotify_factory
         self._pidfd_open = pidfd_open or getattr(os, "pidfd_open", None)
@@ -160,6 +185,7 @@ class Events:
         self._inotify: Optional[Inotify] = None
         self._tracked_pid: Optional[int] = None
         self._tracked_fd: Optional[int] = None
+        self._steam_fds: Dict[int, int] = {}  # pid -> pidfd of every Steam client process we know about
         self._streaming = False
         self._timer: Optional[asyncio.TimerHandle] = None
         self._client_dir = os.path.dirname(paths.client)
@@ -184,12 +210,15 @@ class Events:
         pid = find_streaming_pid(self._proc_root)
         if pid is not None:
             self._track(pid)
+        self._track_steam()
 
     def stop(self) -> None:
         if self._timer is not None:
             self._timer.cancel()
             self._timer = None
         self._untrack()
+        for pid in list(self._steam_fds):
+            self._forget_steam(pid)
         if self._inotify is not None:
             self._inotify.close()
             self._inotify = None
@@ -226,7 +255,45 @@ class Events:
 
     def _fire_files_changed(self) -> None:
         self._timer = None
+        self._track_steam()  # a Steam that started since we last looked
         self._on_files_changed()
+        if not self._steam_fds:
+            self._schedule_files_changed()  # nothing to repair yet: look again once Steam may be up
+
+    # -- the Steam client process ----------------------------------------------
+
+    def steam_running(self) -> bool:
+        return bool(self._steam_fds)
+
+    def _track_steam(self) -> None:
+        if self._pidfd_open is None:
+            return
+        for pid in find_steam_pids(self._proc_root):
+            if pid in self._steam_fds:
+                continue
+            try:
+                fd = self._pidfd_open(pid)
+            except OSError:
+                continue  # already gone
+            self._steam_fds[pid] = fd
+            self._loop.add_reader(fd, self._steam_ended, pid)
+
+    def _forget_steam(self, pid: int) -> None:
+        fd = self._steam_fds.pop(pid, None)
+        if fd is None:
+            return
+        self._loop.remove_reader(fd)
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+
+    def _steam_ended(self, pid: int) -> None:
+        self._forget_steam(pid)
+        self._log.info("Steam client process %d ended", pid)
+        if self._on_steam_exit is not None:
+            self._on_steam_exit()
+        self._track_steam()
 
     # -- the streaming client process --------------------------------------
 

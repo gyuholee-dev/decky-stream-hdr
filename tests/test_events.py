@@ -37,6 +37,9 @@ class ParseTests(unittest.TestCase):
         self.assertIsNone(events.parse_start_event("start 12 34"))
 
 
+STEAM_CLIENT = "/h/.local/share/Steam/steamrt64/steam"
+
+
 class FindTests(unittest.TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
@@ -96,6 +99,7 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
         os.makedirs(self.proc)
         self.streaming = []
         self.files_changed = []
+        self.steam_exits = []
         self.pipes = {}  # pid -> (read fd, write fd): the read end plays the pidfd, writing to it plays the exit
         self.addCleanup(self.close_pipes)
         self.loop = asyncio.get_running_loop()
@@ -112,6 +116,7 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
 
     def end_process(self, pid):
         os.write(self.pipes[pid][1], b"x")
+        shutil.rmtree(os.path.join(self.proc, str(pid)), ignore_errors=True)  # an ended process has no /proc entry
 
     def make_events(self, debounce=0.02):
         self.events = Events(
@@ -119,6 +124,7 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
             self.loop,
             on_streaming=self.streaming.append,
             on_files_changed=lambda: self.files_changed.append(1),
+            on_steam_exit=lambda: self.steam_exits.append(1),
             inotify_factory=FakeInotify,
             pidfd_open=self.pidfd_open,
             proc_root=self.proc,
@@ -179,6 +185,7 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.streaming, [True, False])
 
     async def test_file_events_for_the_wrapper_are_merged_into_one_call(self):
+        make_proc(self.proc, 800, [STEAM_CLIENT])
         self.make_events().start()
         client_dir = os.path.dirname(self.paths.client)
         for name in ("streaming_client", "streaming_client.real", "streaming_client"):
@@ -189,6 +196,7 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.files_changed, [1])
 
     async def test_a_new_event_starts_the_quiet_period_again(self):
+        make_proc(self.proc, 800, [STEAM_CLIENT])
         self.make_events(debounce=0.15).start()
         client_dir = os.path.dirname(self.paths.client)
         FakeInotify.last.fire(client_dir, "streaming_client", IN_CREATE)
@@ -200,11 +208,59 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.files_changed, [1])
 
     async def test_a_requested_check_waits_for_the_quiet_period(self):
+        make_proc(self.proc, 800, [STEAM_CLIENT])
         self.make_events(debounce=0.05).start()
         self.events.request_check()
         self.assertEqual(self.files_changed, [])
         await asyncio.sleep(0.15)
         self.assertEqual(self.files_changed, [1])
+
+    async def test_the_check_comes_again_while_steam_is_not_running(self):
+        self.make_events(debounce=0.03).start()
+        self.events.request_check()
+        await asyncio.sleep(0.12)
+        self.assertGreaterEqual(len(self.files_changed), 2)
+        self.assertFalse(self.events.steam_running())
+
+    async def test_the_check_stops_repeating_once_steam_is_up(self):
+        self.make_events(debounce=0.03).start()
+        self.events.request_check()
+        await asyncio.sleep(0.05)
+        make_proc(self.proc, 801, [STEAM_CLIENT])
+        await asyncio.sleep(0.06)  # the next check finds Steam
+        self.assertTrue(self.events.steam_running())
+        count = len(self.files_changed)
+        await asyncio.sleep(0.12)
+        self.assertEqual(len(self.files_changed), count)
+
+    async def test_a_steam_exit_is_reported(self):
+        make_proc(self.proc, 802, [STEAM_CLIENT, "-gamepadui"])
+        self.make_events().start()
+        self.assertTrue(self.events.steam_running())
+        self.end_process(802)
+        await self.settle()
+        self.assertEqual(self.steam_exits, [1])
+        self.assertFalse(self.events.steam_running())
+
+    async def test_only_the_steam_client_counts_as_steam(self):
+        make_proc(self.proc, 803, ["/usr/bin/steam"])
+        make_proc(self.proc, 804, ["/h/.local/share/Steam/steamrt64/steamwebhelper", "--type=zygote"])
+        make_proc(self.proc, 805, ["/bin/sh", "-c", "steamrt64/steam"])
+        self.make_events().start()
+        self.assertFalse(self.events.steam_running())
+
+    async def test_a_steam_started_later_is_found_at_the_next_check(self):
+        make_proc(self.proc, 806, [STEAM_CLIENT])
+        self.make_events(debounce=0.03).start()
+        self.end_process(806)
+        await self.settle()
+        self.assertEqual(self.steam_exits, [1])
+        make_proc(self.proc, 807, [STEAM_CLIENT])  # Steam restarted
+        self.events.request_check()
+        await asyncio.sleep(0.08)
+        self.end_process(807)
+        await self.settle()
+        self.assertEqual(self.steam_exits, [1, 1])
 
     async def test_unrelated_files_are_ignored(self):
         self.make_events().start()
