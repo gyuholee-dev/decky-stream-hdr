@@ -41,14 +41,14 @@ export const en = {
       "Contrast, Gamma and Saturation let you tune the HDR picture to your taste. You can change them freely, even while streaming.",
       "All plugin settings apply to Remote Play only. Games running directly on this device are not affected.",
     ],
-    requirementsHeading: "Requirements",
+    requirementsHeading: "HDR Streaming Requirements",
     requirements: [
       "Host PC (the PC that runs the game): An HDR-capable game and monitor, and a PC powerful enough to run HDR games smoothly on its own. " +
         "Tested with Windows 11, an RTX 50 series GPU and a Samsung OLED monitor.",
       "Client (this device): A device with a built-in or externally connected HDR display, running SteamOS in Game Mode. " +
         "Tested with the Lenovo Legion Go 2 OLED running CachyOS Handheld.",
-      "Network: A high-bandwidth, low-latency connection is recommended. Tested over 2.5GbE wired and 5 GHz Wi-Fi.",
-      "The PyroWave Video option, added to Steam in October 2026, is required. (Be sure to turn off Use NVFBC capture on NVIDIA GPU.)",
+      "Network: A high-bandwidth, low-latency connection is recommended. For a stationary device, a wired connection of 1GbE or faster is recommended; for a handheld device, connect to 5 GHz Wi-Fi instead of 6 GHz and turn off Wi-Fi power saving. Depending on the device's performance and driver support, packet loss and latency can increase on 6 GHz (Wi-Fi 7), and gameplay may not run smoothly. Tested with a 2.5GbE wired connection and a 5 GHz Wi-Fi connection.",
+      "The PyroWave Video option, added to Steam in October 2026, is required. (Be sure to turn off Use NVFBC capture on NVIDIA GPU.) Steam's regular Bandwidth Limit does not apply to PyroWave, which sends a very large amount of data (over 1 Gbps). If stuttering appears while streaming, turn off YUV 4:4:4 and set Quality Modifier to 1 or lower (about 620-730 Mbps).",
     ],
     hostHeading: "Host Settings",
     host: [
@@ -65,14 +65,13 @@ export const en = {
       "This device > Steam Settings > Remote Play > Advanced Client Options",
       "Enable Advanced Client Options: On",
       "Video: Beautiful",
-      "Bandwidth Limit: Unlimited",
       "Resolution Limit: Display resolution",
       "Framerate Limit: this device's refresh rate",
       "HDR: On",
       "Hardware Decoding: On",
       "HEVC Video: On",
       "AV1 Video: Off",
-      "PyroWave Video: On (Quality Modifier 1 or higher)",
+      "PyroWave Video: On (YUV 4:4:4: Off, Automatic Bitrate: On, Quality Modifier: 1)",
       "Low Latency Networking: On",
       "This device > Steam Settings > Developer > HDR Compatibility Testing: On",
     ],
