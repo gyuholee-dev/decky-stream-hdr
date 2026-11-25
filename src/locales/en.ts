@@ -10,10 +10,10 @@ export const en = {
   pluginName: "StreamHDR",
   hdrToggleLabel: "HDR Streaming",
   hdrToggleDescription:
-    "Applies HDR to both encoding and rendering when you stream with Steam. See Plugin Info for the host and client settings.",
+    "Turns on HDR for both encoding and rendering when streaming with Steam. For the host and client settings, see Plugin Info.",
   paperWhiteLabel: "Paper White",
   paperWhiteDescription:
-    "Sets the reference brightness used when rendering HDR. If your display peaks at 1000 nits, 230 nits is recommended.",
+    "Sets the reference brightness used when rendering HDR. If your display's peak brightness is 1000 nits, 230 nits is recommended.",
   contrastLabel: "Contrast",
   contrastDescription: "Adjusts the contrast of the HDR output. The default is recommended for OLED displays.",
   gammaLabel: "Gamma",
@@ -31,21 +31,21 @@ export const en = {
   info: {
     aboutHeading: "About",
     about:
-      "StreamHDR is a Decky plugin that brings BT.2020 PQ HDR streaming to Steam Remote Play. " +
-      "On SteamOS, its derivatives and other Linux devices running Steam in Game Mode, as long as the device can handle HDR streaming, " +
-      "the plugin steps into Steam's streaming process: it changes the HDR encoding request sent to the host and enables HDR rendering output on the client.",
+      "StreamHDR is a Decky plugin that adds BT.2020 PQ HDR streaming to Steam Remote Play. " +
+      "On SteamOS, its derivatives and other Linux devices running Steam in Game Mode, the plugin modifies Steam's streaming client " +
+      "so that it requests HDR from the host and renders the HDR output, as long as the device is capable of HDR streaming.",
     usageHeading: "Usage",
     usage: [
       "Turn on HDR Streaming in the plugin menu, then start Remote Play. If a stream is already running, end it and start it again for the change to take effect.",
       "Paper White sets the reference brightness of the HDR stream. To change it, end the stream first.",
       "Contrast, Gamma and Saturation let you tune the HDR picture to your taste. You can change them freely, even while streaming.",
-      "All plugin settings apply to Remote Play only. Games installed and run directly on the streaming device are not affected.",
+      "All plugin settings apply to Remote Play only. Games you install and run directly on the client device are not affected.",
     ],
     requirementsHeading: "HDR Streaming Requirements",
     requirements: [
       "Host (the PC that runs the game): An HDR-capable game and monitor, and a PC powerful enough to run HDR games smoothly on its own. " +
         "Tested with Windows 11, an RTX 50 series GPU and a Samsung OLED monitor.",
-      "Client (the device that runs the stream): A device with a built-in or externally connected HDR display, running SteamOS in Game Mode. " +
+      "Client (the device that runs the stream): SteamOS must be running in Game Mode on a device with a built-in or externally connected HDR display. " +
         "Tested with the Lenovo Legion Go 2 OLED running CachyOS Handheld.",
       "Network: A high-bandwidth, low-latency connection is recommended. For a stationary device, a wired connection of 1GbE or faster is recommended; for a handheld device, connect to 5 GHz Wi-Fi instead of 6 GHz and turn off Wi-Fi power saving. Depending on the device's performance and driver support, packet loss and latency can increase on 6 GHz (Wi-Fi 7), and gameplay may not run smoothly. Tested with a 2.5GbE wired connection and a 5 GHz Wi-Fi connection.",
       "The PyroWave Video option, added to Steam in October 2026, is required. (Be sure to turn off Use NVFBC capture on NVIDIA GPU.) Steam's regular Bandwidth Limit does not apply to PyroWave, which sends a very large amount of data (over 1 Gbps). If the frame rate drops or stuttering appears while streaming, turn off YUV 4:4:4 and set Quality Modifier to 1 or lower (about 620-730 Mbps at 1080p).",
@@ -55,7 +55,7 @@ export const en = {
       "Host > Steam Settings > Remote Play > Advanced Host Options",
       "Enable Advanced Host Options: On",
       "Primary display while streaming: an HDR-capable display",
-      "Streaming display HDR: Default, or Custom with Custom HDR Enabled turned on",
+      "Streaming display HDR: Default, or Custom (Custom HDR Enabled: On)",
       "Use NVFBC capture on NVIDIA GPU: Off",
       "Enable hardware encoding: On",
       "Prioritize network traffic: On",
@@ -66,7 +66,7 @@ export const en = {
       "Enable Advanced Client Options: On",
       "Video: Beautiful",
       "Resolution Limit: Display resolution",
-      "Framerate Limit: the streaming device's refresh rate",
+      "Framerate Limit: the client device's refresh rate",
       "HDR: On",
       "Hardware Decoding: On",
       "HEVC Video: On",
@@ -81,9 +81,9 @@ export const en = {
     license: "License",
     repository: "Repository",
   },
-  streamingNotice: "Steam is streaming. HDR Streaming and Paper White can't be changed while a stream is running.",
+  streamingNotice: "Steam is currently streaming. HDR Streaming and Paper White can't be changed until the stream ends.",
   statusLoading: "Loading...",
-  statusUnavailable: "Can't reach the plugin. Please reload the plugin.",
+  statusUnavailable: "Can't connect to the plugin. Please reload the plugin.",
   unknownError: "An unknown error occurred. Error code: {code}",
   // Texts for the error codes sent by the backend (py_modules/streamhdr/errors.py).
   errors: {

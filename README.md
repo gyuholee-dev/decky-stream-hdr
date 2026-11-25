@@ -1,5 +1,7 @@
 # StreamHDR
 
+[English](README.en.md)
+
 StreamHDR은 Steam Remote Play에 BT.2020 PQ HDR 스트리밍을 지원하는 Decky 플러그인입니다. 스팀OS 및 포크와 스팀 게임모드가 설치된 리눅스 기기가 HDR 스트리밍이 가능한 사양일 경우, 이 플러그인을 통해 스팀의 스트리밍 과정에 개입하여 호스트에 대한 HDR 인코딩 요청을 수정하고 클라이언트의 HDR 렌더링 출력을 가능하게 설정할 수 있습니다.
 
 ## 사용 방법
