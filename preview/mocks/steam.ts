@@ -19,7 +19,15 @@ export const scrollClass = lookup("scrollPanelClasses");
 export const cx = (...names: Array<string | false | undefined>) => names.filter(Boolean).join(" ");
 
 // Steam marks the focused element with gpfocus / gpfocuswithin; this mimics it for mouse and keyboard focus.
+// Steam shows the ring for gamepad and keyboard navigation, not when the mouse clicks, so only
+// focus that the browser considers keyboard focus (:focus-visible) counts.
 export function useFocus() {
   const [focused, setFocused] = useState(false);
-  return { focused, bind: { onFocus: () => setFocused(true), onBlur: () => setFocused(false) } };
+  return {
+    focused,
+    bind: {
+      onFocus: (event: { currentTarget: Element }) => setFocused(event.currentTarget.matches(":focus-visible")),
+      onBlur: () => setFocused(false),
+    },
+  };
 }

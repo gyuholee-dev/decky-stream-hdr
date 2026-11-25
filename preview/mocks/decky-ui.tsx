@@ -143,6 +143,86 @@ interface SliderFieldProps {
   onChange?(value: number): void;
 }
 
+interface SliderHitProps {
+  label?: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  disabled?: boolean;
+  onChange?(value: number): void;
+  bind: ReturnType<typeof useFocus>["bind"];
+}
+
+// Rounds to the slider grid and keeps floating point noise (0.1 + 0.2) out of the value.
+function snapToGrid(raw: number, min: number, max: number, step: number) {
+  const snapped = Math.round((raw - min) / step) * step + min;
+  return Number(Math.max(min, Math.min(max, snapped)).toFixed(6));
+}
+
+function SliderHit({ label, value, min, max, step, disabled, onChange, bind }: SliderHitProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const lastSent = useRef(value);
+  lastSent.current = value;
+
+  const send = (next: number) => {
+    if (next === lastSent.current) return;
+    lastSent.current = next;
+    onChange?.(next);
+  };
+  const fromPointer = (clientX: number) => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return;
+    // The drawn handle's center travels between half a handle width from each end of the track.
+    const handle = ref.current?.parentElement?.querySelector(".SliderHandle")?.getBoundingClientRect().width ?? 0;
+    const travel = rect.width - handle;
+    if (travel <= 0) return;
+    const fraction = (clientX - rect.left - handle / 2) / travel;
+    send(snapToGrid(min + fraction * (max - min), min, max, step));
+  };
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (disabled) return;
+    const keys: Record<string, number> = { ArrowLeft: value - step, ArrowDown: value - step, ArrowRight: value + step, ArrowUp: value + step, Home: min, End: max };
+    if (!(event.key in keys)) return;
+    event.preventDefault();
+    send(snapToGrid(keys[event.key], min, max, step));
+  };
+
+  return (
+    <div
+      ref={ref}
+      className="preview-slider-input"
+      role="slider"
+      tabIndex={disabled ? -1 : 0}
+      aria-label={label}
+      aria-valuenow={value}
+      aria-valuemin={min}
+      aria-valuemax={max}
+      aria-disabled={disabled || undefined}
+      onPointerDown={(event) => {
+        if (disabled) return;
+        dragging.current = true;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        event.currentTarget.focus();
+        fromPointer(event.clientX);
+      }}
+      onPointerMove={(event) => {
+        if (dragging.current) fromPointer(event.clientX);
+      }}
+      onPointerUp={(event) => {
+        dragging.current = false;
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }}
+      onPointerCancel={() => {
+        dragging.current = false;
+      }}
+      onKeyDown={onKeyDown}
+      {...bind}
+    />
+  );
+}
+
 export function SliderField({
   label,
   description,
@@ -160,19 +240,18 @@ export function SliderField({
   const normalized = max > min ? (value - min) / (max - min) : 0;
   const normalizedDefault = resetValue !== undefined && max > min ? (resetValue - min) / (max - min) : normalized;
 
-  // A transparent range input on top makes the drawn slider usable with the mouse and the keyboard.
+  // A transparent layer over the drawn slider makes it usable with the mouse and the keyboard. It maps the
+  // pointer to the drawn track itself, so the handle ends up exactly under the pointer.
   const input = (
-    <input
-      className="preview-slider-input"
-      type="range"
+    <SliderHit
+      label={typeof label === "string" ? label : undefined}
+      value={value}
       min={min}
       max={max}
       step={step}
-      value={value}
       disabled={disabled}
-      aria-label={typeof label === "string" ? label : undefined}
-      onChange={(event) => onChange?.(Number(event.target.value))}
-      {...bind}
+      onChange={onChange}
+      bind={bind}
     />
   );
 

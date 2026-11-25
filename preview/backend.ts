@@ -50,9 +50,9 @@ export function patchState(patch: Partial<PreviewStatus>) {
   Object.assign(state, patch);
 }
 
-const snapPercent = (value: number) => Math.max(0, Math.min(200, Math.round(value / 10) * 10));
 
-const snapNits = (value: number) => Math.max(80, Math.min(480, Math.round(value / 10) * 10));
+// The same grid as the real backend (see look.py and paperwhite.py).
+const snap = (value: number, min: number, max: number, step: number) => Math.max(min, Math.min(max, Math.round(value / step) * step));
 
 const handlers: Record<string, (...args: any[]) => PreviewStatus> = {
   get_status: () => ({ ...state, hdr_active: state.streaming && state.hdr_enabled, wrapper: { ...state.wrapper } }),
@@ -77,19 +77,19 @@ const handlers: Record<string, (...args: any[]) => PreviewStatus> = {
     return handlers.get_status();
   },
   set_paper_white: (nits: number) => {
-    state.paper_white = snapNits(nits);
+    state.paper_white = snap(nits, 80, 480, 10);
     return handlers.get_status();
   },
   set_contrast: (percent: number) => {
-    state.contrast = Math.max(0, Math.min(200, Math.round(percent / 5) * 5));
+    state.contrast = snap(percent, 0, 200, 5);
     return handlers.get_status();
   },
   set_gamma: (hundredths: number) => {
-    state.gamma = Math.max(50, Math.min(200, Math.round(hundredths / 5) * 5));
+    state.gamma = snap(hundredths, 50, 200, 5);
     return handlers.get_status();
   },
   set_saturation: (percent: number) => {
-    state.saturation = snapPercent(percent);
+    state.saturation = snap(percent, 0, 200, 5);
     return handlers.get_status();
   },
 };

@@ -42,18 +42,14 @@ function KeepAll({ children }: { children: ReactNode }) {
 // The "Plugin Info" row at the bottom of the panel: a small line of text with an icon that opens the
 // info page (the repository link is on that page). It is a plain row, not a full-size button, and is
 // only highlighted when it has focus.
-function Footer({ onStatus, onFailed }: { onStatus: (status: Status) => void; onFailed: () => void }) {
+function Footer({ onRequest }: { onRequest: (request: Promise<Status>) => void }) {
   const confirmReset = () =>
     showModal(
       <ConfirmModal
         strTitle={strings.resetTitle}
         strDescription={<KeepAll>{strings.resetDescription}</KeepAll>}
         strOKButtonText={strings.resetConfirmButton}
-        onOK={() => {
-          resetSettings()
-            .then(onStatus)
-            .catch(onFailed);
-        }}
+        onOK={() => onRequest(resetSettings())}
       />,
     );
 
@@ -95,6 +91,23 @@ function Message({ text }: { text: string }) {
 function Panel() {
   const [status, setStatus] = useState<Status | undefined>();
   const [failed, setFailed] = useState(false);
+  const latest = useRef(0);
+
+  // The backend reply carries the stored state. A reply that a newer change has overtaken is dropped,
+  // or a control would jump back to an old value while the user is still dragging it.
+  const send = (request: Promise<Status>) => {
+    const id = ++latest.current;
+    request
+      .then((reply) => {
+        if (id === latest.current) setStatus(reply);
+      })
+      .catch(() => setFailed(true));
+  };
+  // Shows a change at once, then sends it to the backend.
+  const change = (patch: Partial<Status>, request: Promise<Status>) => {
+    setStatus((current) => (current ? { ...current, ...patch } : current));
+    send(request);
+  };
 
   useEffect(() => {
     getStatus()
@@ -114,11 +127,7 @@ function Panel() {
             description={<KeepAll>{strings.hdrToggleDescription}</KeepAll>}
             checked={status.hdr_enabled}
             disabled={status.streaming}
-            onChange={(enabled: boolean) => {
-              setHdrEnabled(enabled)
-                .then(setStatus)
-                .catch(() => setFailed(true));
-            }}
+            onChange={(enabled: boolean) => change({ hdr_enabled: enabled }, setHdrEnabled(enabled))}
           />
         </PanelSectionRow>
         {status.error && (
@@ -138,12 +147,7 @@ function Panel() {
             resetValue={PAPER_WHITE_DEFAULT}
             showValue
             valueSuffix=" nits"
-            onChange={(nits: number) => {
-              setStatus({ ...status, paper_white: nits });
-              setPaperWhite(nits)
-                .then(setStatus)
-                .catch(() => setFailed(true));
-            }}
+            onChange={(nits: number) => change({ paper_white: nits }, setPaperWhite(nits))}
           />
         </PanelSectionRow>
         {status.paper_white_error && (
@@ -162,12 +166,7 @@ function Panel() {
             resetValue={CONTRAST_DEFAULT}
             showValue
             valueSuffix="%"
-            onChange={(percent: number) => {
-              setStatus({ ...status, contrast: percent });
-              setContrast(percent)
-                .then(setStatus)
-                .catch(() => setFailed(true));
-            }}
+            onChange={(percent: number) => change({ contrast: percent }, setContrast(percent))}
           />
         </PanelSectionRow>
         <PanelSectionRow>
@@ -182,10 +181,7 @@ function Panel() {
             showValue
             onChange={(gamma: number) => {
               const hundredths = Math.round(gamma * 100);
-              setStatus({ ...status, gamma: hundredths });
-              setGamma(hundredths)
-                .then(setStatus)
-                .catch(() => setFailed(true));
+              change({ gamma: hundredths }, setGamma(hundredths));
             }}
           />
         </PanelSectionRow>
@@ -200,13 +196,7 @@ function Panel() {
             resetValue={SATURATION_DEFAULT}
             showValue
             valueSuffix="%"
-            onChange={(percent: number) => {
-              // Show the new value at once; the backend reply replaces it with the stored one.
-              setStatus({ ...status, saturation: percent });
-              setSaturation(percent)
-                .then(setStatus)
-                .catch(() => setFailed(true));
-            }}
+            onChange={(percent: number) => change({ saturation: percent }, setSaturation(percent))}
           />
         </PanelSectionRow>
         {status.look_error && (
@@ -214,7 +204,7 @@ function Panel() {
             <KeepAll>{strings.errorPrefix + errorText(status.look_error)}</KeepAll>
           </PanelSectionRow>
         )}
-        <Footer onStatus={setStatus} onFailed={() => setFailed(true)} />
+        <Footer onRequest={send} />
       </PanelSection>
     </>
   );

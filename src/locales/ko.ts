@@ -97,9 +97,9 @@ export const ko: LocaleStrings = {
     file_operation_failed: "파일을 처리하지 못했습니다: {detail}",
     env_missing: "화면 설정 정보를 찾을 수 없습니다. Steam이 게임 모드로 실행 중인지 확인하세요.",
     env_no_display: "화면 설정 정보가 올바르지 않습니다.",
-    xprop_missing: "xprop 프로그램이 설치되어 있지 않아 채도를 적용할 수 없습니다.",
+    xprop_missing: "xprop 프로그램이 설치되어 있지 않아 대비, 감마, 채도를 적용할 수 없습니다.",
     xprop_timeout: "화면 설정을 바꾸는 중 응답이 없어 시간이 초과되었습니다.",
-    xprop_failed: "채도를 적용하지 못했습니다: {detail}",
-    lut_failed: "채도 설정 파일을 만들지 못했습니다: {detail}",
+    xprop_failed: "대비, 감마, 채도를 적용하지 못했습니다: {detail}",
+    lut_failed: "색 보정 파일을 만들지 못했습니다: {detail}",
   },
 };
