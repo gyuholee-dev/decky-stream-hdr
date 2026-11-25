@@ -116,13 +116,23 @@ def find_streaming_pid(proc_root: str = "/proc") -> Optional[int]:
     return None
 
 
+SHELL_NAMES = ("sh", "bash", "dash")
+
+
 def is_streaming_client(pid: int, proc_root: str = "/proc") -> bool:
+    """True for the streaming client, whether it is the original binary or still the wrapper script.
+
+    The wrapper reports a start just before it execs the real client, so for a moment the process is the shell
+    running the script: its command line is "/bin/sh /path/streaming_client ...". That counts too."""
     try:
         with open(os.path.join(proc_root, str(pid), "cmdline"), "rb") as handle:
-            first = handle.read(4096).split(b"\0", 1)[0]
+            parts = handle.read(4096).split(b"\0")
     except OSError:
         return False
-    return os.path.basename(first.decode("utf-8", "replace")) in CLIENT_NAMES
+    names = [os.path.basename(part.decode("utf-8", "replace")) for part in parts[:2]]
+    if names[0] in CLIENT_NAMES:
+        return True
+    return names[0] in SHELL_NAMES and len(names) > 1 and names[1] in CLIENT_NAMES
 
 
 def is_steam_client(pid: int, proc_root: str = "/proc") -> bool:

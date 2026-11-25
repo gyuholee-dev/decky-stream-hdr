@@ -60,6 +60,16 @@ class FindTests(unittest.TestCase):
         make_proc(self.root, 21, ["/x/steamrt64/streaming_client.real", "--vulkan"])
         self.assertEqual(events.find_streaming_pid(self.root), 21)
 
+    def test_the_wrapper_script_still_running_counts_as_the_client(self):
+        # The wrapper reports a start before it execs the real client; for that moment the process is the shell.
+        make_proc(self.root, 22, ["/bin/sh", "/x/steamrt64/streaming_client", "--vulkan"])
+        self.assertEqual(events.find_streaming_pid(self.root), 22)
+
+    def test_a_shell_running_something_else_does_not_count(self):
+        make_proc(self.root, 23, ["/bin/sh", "/x/other.sh", "streaming_client"])
+        make_proc(self.root, 24, ["/usr/bin/python3", "/x/streaming_client"])
+        self.assertIsNone(events.find_streaming_pid(self.root))
+
     def test_ignores_non_process_entries_and_missing_root(self):
         os.makedirs(os.path.join(self.root, "self"))
         self.assertIsNone(events.find_streaming_pid(self.root))
@@ -195,6 +205,12 @@ class EventsTests(unittest.IsolatedAsyncioTestCase):
         self.end_process(400)
         await self.settle()
         self.assertEqual(self.streaming, [True, False])
+
+    async def test_a_start_event_from_the_wrapper_before_its_exec_is_accepted(self):
+        make_proc(self.proc, 410, ["/bin/sh", "/x/steamrt64/streaming_client", "--vulkan"])
+        self.make_events().start()
+        self.write_event("start 410\n")
+        self.assertEqual(self.streaming, [True])
 
     async def test_an_event_for_another_process_is_ignored(self):
         make_proc(self.proc, 500, ["/usr/bin/steam"])
