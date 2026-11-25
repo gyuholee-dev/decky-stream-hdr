@@ -23,7 +23,7 @@
     "hdr"
   ],
   "author": "GyuhoLee",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "devDependencies": {
     "@decky/ui": "^4.11.0",
     "@material-design-icons/svg": "^0.14.15",

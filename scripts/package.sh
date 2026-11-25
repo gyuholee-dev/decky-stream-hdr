@@ -29,7 +29,7 @@ rm -rf release/stage
 mkdir -p "$stage/bin"
 cp -R dist py_modules "$stage/"
 find "$stage" -name __pycache__ -type d -prune -exec rm -rf {} +
-cp main.py plugin.json package.json LICENSE README.md "$stage/"
+cp main.py plugin.json package.json LICENSE THIRD_PARTY_NOTICES README.md "$stage/"
 if [ "$no_shim" = 0 ]; then
     cp backend/out/sdl_hdr_shim.so "$stage/bin/"
 fi
