@@ -71,9 +71,11 @@ Once the installation is complete, open StreamHDR from the Decky menu, turn on H
 - If the host's "Use NVFBC capture on NVIDIA GPU" option is on, the captured data is not encoded in the HDR color gamut. Always turn it off.
 - If a Steam update changes streaming_client, the plugin may stop working. If you can't update the plugin, disable or uninstall it and restart Steam to restore the original state.
 
-## Development
+---
 
-### Design Principles
+# Development
+
+## Design Principles
 
 - **The only system file it modifies is `streaming_client`.** The original is always kept in the same folder as `streaming_client.real`, and the plugin puts it back when it is uninstalled or when Steam exits.
 - **Installing and restoring are timed around Steam's file check.** Every time Steam starts, it checks the size of `streaming_client`; if it differs, Steam restores the file with an update and then restarts itself. If the plugin immediately puts the wrapper back, Steam repeats the same procedure over and over (the wrapper restore loop), and Game Mode may fail to boot. So when Steam exits, the plugin restores the original first, and installs the wrapper only after Steam has been running for a while.
@@ -81,7 +83,7 @@ Once the installation is complete, open StreamHDR from the Decky menu, turn on H
 - **Every feature is for streaming only.** The wrapper affects only `streaming_client`, and the color adjustment is applied when a stream starts and removed when it ends. Local games are not affected.
 - **Option definitions live in one place.** Range, step, default and whether an option is locked during a stream are all in `py_modules/streamhdr/options.json`, which the frontend, the backend and the browser mockup all read.
 
-### How It Works
+## How It Works
 
 1. **Wrapper installation:** `streaming_client` is kept as `streaming_client.real`, and a shell script (the wrapper) takes its place under the same name. The wrapper sets `LD_PRELOAD` only when the HDR Streaming flag (`enabled`) and `sdl_hdr_shim.so` exist, writes `start <pid>` to the `stream_event` file, and then `exec`s the original. The wrapper is installed regardless of the HDR Streaming setting; the flag file decides whether it is on.
 2. **Requesting HDR:** When Steam on Linux asks SDL (on X11) whether the display supports HDR, it always gets "no", so it requests SDR from the host. The injected library (`backend/src/sdl_hdr_shim.c`) answers `true` to the `SDL.display.HDR_enabled` query, so Steam requests HDR.
@@ -92,7 +94,7 @@ Once the installation is complete, open StreamHDR from the Decky menu, turn on H
 7. **Color adjustment:** Contrast, Gamma and Saturation are turned into a 17×17×17 3D LUT (`.cube`), which is set on gamescope's `GAMESCOPE_COLOR_LOOK_PQ` property with `xprop`. Each combination of settings gets its own `look_pq_s###_c###_g###_p###.cube` file and the others are cleaned up; when all three values are at their defaults, the property is removed.
 8. **Preventing repeated restores:** If Steam restores the original 3 times within 10 minutes, the plugin stops reinstalling and shows an error box. It tries again when HDR Streaming is switched or the plugin is reloaded.
 
-### Options
+## Options
 
 | Option | Default | Range | Notes |
 |---|---|---|---|
@@ -104,7 +106,7 @@ Once the installation is complete, open StreamHDR from the Decky menu, turn on H
 
 Reset All Settings sets every option back to its default. During a stream, the options that are locked (HDR Streaming and Paper White) are left as they are.
 
-### File Structure
+## File Structure
 
 ```
 plugin.json, package.json    Plugin info and build settings (package.json is the source of the version)
@@ -143,7 +145,7 @@ The plugin creates these files on the device:
 | `~/.local/share/decky-stream-hdr/luts/` | Color adjustment LUT files |
 | `~/homebrew/settings/decky-stream-hdr/settings.json` | Option values |
 
-### Development Setup
+## Development Setup
 
 You need Node.js, yarn (1.x) and Python 3. Building the injected library also needs `gcc` (or `make`) on Linux.
 
@@ -157,7 +159,7 @@ yarn serve        # browser mockup: http://localhost:5173/ (add ?lang=english to
 
 The mockup is an approximation of Decky and the Steam UI, so spacing and fonts are not exact. Check the final look on a device.
 
-### Build and Install
+## Build and Install
 
 The injected library can only be built on Linux, so build the release zip on a Linux device.
 
@@ -173,11 +175,11 @@ git pull
 sh scripts/install-dev.sh
 ```
 
-### Translation
+## Translation
 
 The texts are in `src/locales/en.ts` (the reference language) and `ko.ts`; the language is chosen from Steam's language setting, and anything a language lacks is shown in English. Steam option names in the English texts are written exactly as they appear in Steam's English interface. To add a language, create `src/locales/<language>.ts` and register it in `src/locales/index.ts`. The info page texts are kept identical to this README from the introduction at the top through "Client Settings".
 
-### Manual Recovery
+## Manual Recovery
 
 If you can't remove the plugin, or the Steam update prompt keeps coming back and Game Mode won't boot, connect over SSH or a TTY and run the following in order.
 
