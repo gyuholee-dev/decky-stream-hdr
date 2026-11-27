@@ -32,6 +32,11 @@ function SectionHeader({ children, title }: { children: ReactNode; title?: boole
   );
 }
 
+// A smaller heading inside a section, like the ### headings under the title of a README.
+function SubHeader({ children }: { children: ReactNode }) {
+  return <div style={{ fontSize: "1.25rem", fontWeight: 600, lineHeight: 1.25, marginTop: "24px", marginBottom: "16px" }}>{children}</div>;
+}
+
 function Section({ heading, title, children }: { heading: string; title?: boolean; children: ReactNode }) {
   return (
     <div>
@@ -69,6 +74,19 @@ function OptionalSection({ heading, items }: { heading?: string; items?: string[
   );
 }
 
+// The "how is this possible" part exists only in languages which provide its texts.
+function OptionalHow({ heading, paragraphs }: { heading?: string; paragraphs?: string[] }) {
+  if (!heading || !paragraphs?.length) return null;
+  return (
+    <>
+      <SubHeader>{heading}</SubHeader>
+      {paragraphs.map((text) => (
+        <Paragraph key={text}>{text}</Paragraph>
+      ))}
+    </>
+  );
+}
+
 export function InfoPage() {
   const info = strings.info;
   return (
@@ -84,7 +102,9 @@ export function InfoPage() {
       >
         <DialogBody>
           <Section heading={strings.pluginName} title>
+            <SubHeader>{info.aboutHeading}</SubHeader>
             <Paragraph>{info.about}</Paragraph>
+            <OptionalHow heading={info.howHeading} paragraphs={info.how} />
           </Section>
           <Section heading={info.usageHeading}>
             <Items items={info.usage} ordered />
@@ -94,6 +114,7 @@ export function InfoPage() {
             <Items items={info.host} />
           </Section>
           <OptionalSection heading={info.clientHeading} items={info.client} />
+          <OptionalSection heading={info.knownIssuesHeading} items={info.knownIssues} />
           <Section heading={info.detailsHeading}>
             <Items items={[`${info.version}: ${pluginInfo.version}`, `${info.author}: ${pluginInfo.author}`, `${info.license}: ${pluginInfo.license}`]} />
             {/* A button at the right edge: as tall as Steam's own buttons (like Reset All Settings), but only as wide as its content. */}

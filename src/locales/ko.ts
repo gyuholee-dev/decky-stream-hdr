@@ -4,7 +4,7 @@ import type { LocaleStrings } from "./types";
 // 영어 그대로 두고, 설명문과 메시지만 번역한다. 단 '스트리밍 콘텐츠 밝기'는 한국어 이름으로 표시한다. 읽는 사람은 일반 사용자이므로 개발 용어는 쓰지 않는다.
 // 여기에 없는 문구는 영어로 표시된다.
 export const ko: LocaleStrings = {
-  hdrToggleDescription: "스팀 스트리밍 시 인코딩 및 렌더링에 HDR을 적용합니다. 호스트 및 클라이언트 설정은 Info를 확인하세요.",
+  hdrToggleDescription: "Steam 스트리밍 시 인코딩 및 렌더링에 HDR을 적용합니다. 호스트 및 클라이언트 설정은 Info를 확인하세요.",
   paperWhiteLabel: "스트리밍 콘텐츠 밝기",
   paperWhiteDescription: "스트리밍하는 게임 화면의 기준 밝기를 결정합니다.",
   contrastDescription: "HDR 출력의 대비를 조정합니다. OLED 디스플레이일 경우 기본값을 권장합니다.",
@@ -15,27 +15,30 @@ export const ko: LocaleStrings = {
   resetConfirmButton: "확인",
   cancelButton: "취소",
   info: {
-    aboutHeading: "소개",
+    aboutHeading: "플러그인 소개",
     about:
-      "StreamHDR은 Steam Remote Play에 BT.2020 PQ HDR 스트리밍을 지원하는 Decky 플러그인입니다. " +
-      "스팀OS 및 포크와 스팀 게임모드가 설치된 리눅스 기기가 HDR 스트리밍이 가능한 사양일 경우, 이 플러그인을 통해 스팀의 스트리밍 과정에 개입하여 호스트에 대한 HDR 인코딩 요청을 수정하고 클라이언트의 HDR 렌더링 출력을 가능하게 설정할 수 있습니다.",
+      "StreamHDR은 Steam Remote Play에 HDR 스트리밍을 지원하는 Decky 플러그인입니다. HDR 출력이 가능한 기기에 최신 SteamOS가 설치되어 있다면 이 플러그인을 통해 BT.2020 색역의 HDR 스트리밍이 가능하도록 설정할 수 있습니다.",
+    howHeading: "어떻게 가능한가",
+    how: [
+      "SteamOS는 HDR 스트리밍을 하지 않습니다. HDR로 표시된 배지는 실제로는 미리 정해진 HDR 호환성 정보에 의한 표시일 뿐이고, 호스트에서 인코딩되어 전송되는 스트림은 BT.709 SDR 색역입니다. 즉 SDR 스트림을 그저 HDR 디스플레이로 렌더링만 하고 있다는 것이고, 그조차 미리 정해진 호환성 값이 없으면 SDR로 렌더링한다는 것입니다.",
+      "StreamHDR은 이러한 문제를 해결하기 위해 개발되었습니다. 이 플러그인이 하는 일은 단순합니다. Steam의 스트리밍 클라이언트(streaming_client)를 래핑하는 방법으로 Steam이 호스트에 보내는 스트리밍 요청을 HDR로 수정하고, 클라이언트에서 HDR 스트림이 정상적인 밝기로 렌더링되도록 설정합니다. 그것이 전부입니다.",
+    ],
     usageHeading: "사용 방법",
     usage: [
       "플러그인 메뉴에서 HDR Streaming을 켠 뒤 Remote Play를 실행하십시오. 이미 실행 중이라면 스트리밍을 종료한 뒤 다시 실행해야 적용됩니다.",
       "스트리밍 콘텐츠 밝기는 HDR 스트리밍이 어느 정도의 밝기로 출력될지 결정하는 기준값입니다. 이 값을 변경하고자 할 경우 스트리밍을 종료해 주십시오.",
       "Contrast, Gamma, Saturation은 HDR 출력 이미지를 사용자의 선호에 맞게 조정할 수 있는 설정입니다. 이 값들은 스트리밍 중에도 자유롭게 변경할 수 있습니다.",
-      "플러그인의 모든 설정은 Remote Play에만 적용되며, 스트리밍을 실행하는 기기에 직접 설치하여 실행하는 게임에는 영향이 없습니다.",
+      "플러그인의 모든 설정은 Remote Play에만 적용되며, 클라이언트 기기에 직접 설치하여 실행하는 게임의 화면에는 영향이 없습니다.",
     ],
     requirementsHeading: "HDR 스트리밍 요구사양",
     requirements: [
-      "호스트 (게임을 실행하는 PC): HDR 지원 게임 및 HDR 모니터와, HDR 게임을 직접 원활하게 실행 가능한 사양의 PC가 필요합니다. " +
-        "확인된 환경은 Windows 11, RTX 50, 삼성 OLED 모니터입니다.",
-      "클라이언트(스트리밍을 실행하는 기기): HDR 디스플레이가 내장되거나 또는 외장으로 연결된 기기에서 스팀OS를 게임 모드로 실행해야 합니다. " +
-        "확인된 환경은 Lenovo Legion Go 2 OLED와 CachyOS Handheld입니다.",
-      "네트워크: 고대역폭 저지연 네트워크 환경을 권장합니다. 거치 기기일 경우 1GbE 이상 속도의 유선 연결을 권장하며, 핸드헬드 기기일 경우 Wi-Fi 절전을 끄는 걸 권장합니다. 공유기에서 MLO(Multi-Link Operation)를 켜 두면 MLO를 지원하지 않는 기기(Wi-Fi 6E 등)의 6GHz 연결에서 지연이 커지고 패킷 손실이 생겨 원활한 게임플레이가 어려울 수 있으니, MLO를 끄거나 5GHz Wi-Fi에 연결하십시오. 확인된 환경은 2.5GbE 유선 연결, 5GHz Wi-Fi 연결, MLO를 끈 6GHz Wi-Fi 연결입니다.",
-      "스팀에 2026년 10월부터 추가된 PyroWave 동영상 옵션을 필수로 사용해야 합니다. (NVFBC 캡처는 반드시 꺼 주십시오) PyroWave는 Steam의 일반 대역폭 제한이 적용되지 않고 전송량이 1Gbps 이상으로 매우 큽니다(YUV 4:4:4 켬, 품질 조정 2에서 1080p 기준 최대 1.1Gbps, 6GHz Wi-Fi 연결에서 확인). 스트리밍 플레이 중 프레임레이트 저하나 스터터링이 나타날 경우 YUV 4:4:4를 끄고 품질 조정을 1 이하로 낮추십시오 (1080p 기준 약 620~730Mbps).",
+      "호스트(게임을 실행하는 PC): HDR 게임을 원활하게 실행 가능한 사양의 PC가 필요합니다.",
+      "클라이언트(스트리밍을 실행하는 기기): HDR 디스플레이가 내장되거나 또는 외장으로 연결된 기기에서 SteamOS를 게임 모드로 실행해야 합니다.",
+      "네트워크: 고대역폭 저지연 네트워크 환경을 권장합니다. 거치 기기일 경우 1GbE 이상 속도의 유선 연결을 권장하며, 핸드헬드 기기일 경우 Wi-Fi 절전을 끄는 걸 권장합니다. 공유기에서 MLO(Multi-Link Operation)를 켜 두면 MLO를 지원하지 않는 기기(Wi-Fi 6E 등)의 6GHz 연결에서 지연이 커지고 패킷 손실이 생겨 원활한 게임플레이가 어려울 수 있으니, MLO를 끄거나 5GHz Wi-Fi에 연결하십시오.",
+      "Lenovo Legion Go 2 등 OLED 내장 디스플레이가 탑재된 기기에서 HDR 스트리밍을 할 경우, 콘텐츠 휘도 제한 완화가 확인된 SteamOS 3.10.1 이상 버전을 권장합니다.",
+      "Steam에 2026년 10월부터 추가된 PyroWave 동영상 옵션을 필수로 사용해야 합니다. PyroWave는 Steam의 일반 대역폭 제한이 적용되지 않고 전송량이 1Gbps 이상으로 매우 큽니다(YUV 4:4:4 켬, 품질 조정 2에서 1080p 기준 최대 1.1Gbps, 6GHz Wi-Fi 연결에서 테스트). 스트리밍 플레이 중 프레임레이트 저하나 스터터링이 나타날 경우 YUV 4:4:4를 끄고 품질 조정을 1 이하로 낮추십시오 (1080p 기준 약 620~730Mbps).",
     ],
-    hostHeading: "호스트 설정",
+    hostHeading: "호스트 권장 설정",
     host: [
       "호스트의 Steam 설정 > Remote Play > 고급 호스트 설정",
       "고급 호스트 옵션 사용: 켬",
@@ -44,8 +47,10 @@ export const ko: LocaleStrings = {
       "NVIDIA GPU에서 NVFBC 캡처 사용: 끔",
       "하드웨어 인코딩 사용: 켬",
       "네트워크 트래픽 우선순위 조정: 켬",
+      "Windows 설정 > 시스템 > 디스플레이 > HDR: HDR 사용 켬, SDR 콘텐츠 밝기 50",
+      "게임의 HDR 설정: 최대 밝기 1000 nits",
     ],
-    clientHeading: "클라이언트 설정",
+    clientHeading: "클라이언트 권장 설정",
     client: [
       "클라이언트의 Steam 설정 > Remote Play > 고급 클라이언트 설정",
       "고급 클라이언트 옵션 사용: 켬",
@@ -59,6 +64,15 @@ export const ko: LocaleStrings = {
       "PyroWave 동영상: 켬 (YUV 4:4:4 끔, 자동 비트 전송률 켬, 품질 조정 1)",
       "낮은 지연 시간 네트워크: 켬",
       "클라이언트의 Steam 설정 > 개발자 > HDR 호환성 테스트: 켬",
+      "StreamHDR 플러그인: 스트리밍 콘텐츠 밝기 200 nits (기본값)",
+    ],
+    knownIssuesHeading: "알려진 문제",
+    knownIssues: [
+      "핸드헬드 기기의 내장 디스플레이에서 HDR 피크 휘도 영역에 클리핑이 생길 수 있습니다. SteamOS는 내장 디스플레이에서 HDR 콘텐츠의 최대 휘도를 약 600 nits로 제한하는 것으로 추정되며(밝기 슬라이더 최대 기준), 이 값을 넘는 휘도의 픽셀은 백색으로 표현됩니다. 게임 화면에서 하늘의 태양처럼 아주 밝은 곳이 백색으로 타는 것처럼 보일 경우, 호스트 게임의 최대 밝기를 800 nits 이하로 낮추거나 스트리밍 콘텐츠 밝기를 낮추는 방법으로 문제를 완화할 수 있습니다.",
+      "이 플러그인은 Steam의 시스템 파일 streaming_client를 조건에 따라 자동으로 수정하거나 복원하는 동작을 합니다. 심각한 오류가 발생할 경우 사용자가 직접 해결하기 어려울 수 있으니 유의해 주십시오.",
+      "호스트의 \"스트리밍 디스플레이 HDR\" 옵션을 \"클라이언트와 일치\"로 설정할 경우 스트리밍 시작 직후 인코딩이 SDR로 되돌아가는 문제가 있습니다. 옵션을 반드시 \"기본\" 또는 \"맞춤 설정\"으로 두십시오.",
+      "호스트에서 \"NVFBC 캡처\" 옵션을 켤 경우 캡처된 데이터가 HDR 색역으로 인코딩되지 않습니다. 이 옵션은 반드시 끄십시오.",
+      "Steam 업데이트로 streaming_client가 변경될 경우 플러그인이 동작하지 않을 수 있습니다. 플러그인을 업데이트할 수 없을 경우, 플러그인을 비활성화하거나 제거하고 Steam을 재시작하면 원래 상태로 복구할 수 있습니다.",
     ],
     detailsHeading: "상세 정보",
     version: "버전",
@@ -66,14 +80,14 @@ export const ko: LocaleStrings = {
     license: "라이선스",
     repository: "저장소",
   },
-  streamingNotice: "스팀이 스트리밍 중입니다. 스트리밍 중에는 HDR 및 스트리밍 콘텐츠 밝기 설정을 변경할 수 없습니다.",
+  streamingNotice: "Steam이 스트리밍 중입니다. 스트리밍 중에는 HDR 및 스트리밍 콘텐츠 밝기 설정을 변경할 수 없습니다.",
   statusLoading: "로드하는 중...",
   statusUnavailable: "플러그인에 연결할 수 없습니다. 플러그인을 다시 로드해 주십시오.",
   unknownError: "알 수 없는 오류가 발생했습니다. 오류 코드: {code}",
   errors: {
     client_not_found: "streaming_client를 찾지 못했습니다. Steam이 기본 경로에 설치되어 있는지 확인해 주십시오.",
     shim_missing: "플러그인 파일이 손상되거나 누락되었습니다. 플러그인을 다시 설치해 주십시오.",
-    original_missing: "streaming_client.real을 찾을 수 없습니다. 스팀을 재시작하고 플러그인을 다시 로드해 주십시오.",
+    original_missing: "streaming_client.real을 찾을 수 없습니다. Steam을 재시작하고 플러그인을 다시 로드해 주십시오.",
     unknown_format: "streaming_client가 요구 형식과 불일치하여 플러그인이 올바르게 작동하지 않습니다.",
     file_operation_failed: "파일 처리에 실패했습니다: {detail}",
     env_missing: "gamescope 정보를 찾을 수 없습니다. Steam이 게임 모드로 실행 중인지 확인해 주십시오.",

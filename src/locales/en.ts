@@ -28,28 +28,30 @@ export const en = {
   cancelButton: "Cancel",
   // Texts of the info page that the "Plugin Info" button opens.
   info: {
-    aboutHeading: "About",
+    aboutHeading: "About the Plugin",
     about:
-      "StreamHDR is a Decky plugin that adds BT.2020 PQ HDR streaming to Steam Remote Play. " +
-      "On SteamOS, its derivatives and other Linux devices running Steam in Game Mode, the plugin modifies Steam's streaming client " +
-      "so that it requests HDR from the host and renders the HDR output, as long as the device is capable of HDR streaming.",
+      "StreamHDR is a Decky plugin that adds HDR streaming to Steam Remote Play. If the latest SteamOS is installed on a device capable of HDR output, this plugin lets you set it up for HDR streaming in the BT.2020 color gamut.",
+    howHeading: "How Is This Possible?",
+    how: [
+      "SteamOS does not actually stream HDR. The badge marked HDR is only a display based on predefined HDR compatibility information, and the stream that the host encodes and sends is actually in the BT.709 SDR color gamut. In other words, an SDR stream is merely being rendered on an HDR display, and even that falls back to SDR rendering when there is no predefined compatibility value.",
+      "StreamHDR was developed to solve this problem. What this plugin does is simple. By wrapping Steam's streaming client (streaming_client), it changes the streaming request that Steam sends to the host into an HDR request, and it sets up the client so that the HDR stream is rendered at a normal brightness. That is all.",
+    ],
     usageHeading: "Usage",
     usage: [
       "Turn on HDR Streaming in the plugin menu, then start Remote Play. If a stream is already running, end it and start it again for the change to take effect.",
       "Streaming Content Brightness sets the reference brightness of the HDR stream. To change it, end the stream first.",
       "Contrast, Gamma and Saturation let you tune the HDR picture to your taste. You can change them freely, even while streaming.",
-      "All plugin settings apply to Remote Play only. Games you install and run directly on the client device are not affected.",
+      "All plugin settings apply to Remote Play only. The screen of games you install and run directly on the client device is not affected.",
     ],
     requirementsHeading: "HDR Streaming Requirements",
     requirements: [
-      "Host (the PC that runs the game): An HDR-capable game and monitor, and a PC powerful enough to run HDR games smoothly on its own. " +
-        "Tested with Windows 11, an RTX 50 series GPU and a Samsung OLED monitor.",
-      "Client (the device that runs the stream): SteamOS must be running in Game Mode on a device with a built-in or externally connected HDR display. " +
-        "Tested with the Lenovo Legion Go 2 OLED running CachyOS Handheld.",
-      "Network: A high-bandwidth, low-latency connection is recommended. For a stationary device, a wired connection of 1GbE or faster is recommended; for a handheld device, turn off Wi-Fi power saving. If MLO (Multi-Link Operation) is turned on at the router, devices that do not support MLO (such as Wi-Fi 6E devices) can see higher latency and packet loss on 6 GHz, and gameplay may not run smoothly; turn MLO off or connect to 5 GHz Wi-Fi. Tested with a 2.5GbE wired connection, a 5 GHz Wi-Fi connection, and a 6 GHz Wi-Fi connection with MLO turned off.",
-      "The PyroWave Video option, added to Steam in October 2026, is required. (Be sure to turn off Use NVFBC capture on NVIDIA GPU.) Steam's regular Bandwidth Limit does not apply to PyroWave, which sends a very large amount of data (over 1 Gbps; up to 1.1 Gbps at 1080p with YUV 4:4:4 on and Quality Modifier 2, confirmed over 6 GHz Wi-Fi). If the frame rate drops or stuttering appears while streaming, turn off YUV 4:4:4 and set Quality Modifier to 1 or lower (about 620-730 Mbps at 1080p).",
+      "Host (the PC that runs the game): A PC powerful enough to run HDR games smoothly is required.",
+      "Client (the device that runs the stream): SteamOS must be running in Game Mode on a device with a built-in or externally connected HDR display.",
+      "Network: A high-bandwidth, low-latency connection is recommended. For a stationary device, a wired connection of 1GbE or faster is recommended; for a handheld device, turn off Wi-Fi power saving. If MLO (Multi-Link Operation) is turned on at the router, devices that do not support MLO (such as Wi-Fi 6E devices) can see higher latency and packet loss on 6 GHz, and gameplay may not run smoothly; turn MLO off or connect to 5 GHz Wi-Fi.",
+      "When streaming HDR to a device with a built-in OLED display, such as the Lenovo Legion Go 2, SteamOS 3.10.1 or later, where a relaxed content luminance limit has been confirmed, is recommended.",
+      "The PyroWave Video option, added to Steam in October 2026, is required. PyroWave is not subject to Steam's regular Bandwidth Limit and sends a very large amount of data (over 1 Gbps; up to 1.1 Gbps at 1080p with YUV 4:4:4 on and Quality Modifier 2, tested over 6 GHz Wi-Fi). If the frame rate drops or stuttering appears while streaming, turn off YUV 4:4:4 and set Quality Modifier to 1 or lower (about 620-730 Mbps at 1080p).",
     ],
-    hostHeading: "Host Settings",
+    hostHeading: "Recommended Host Settings",
     host: [
       "Host > Steam Settings > Remote Play > Advanced Host Options",
       "Enable Advanced Host Options: On",
@@ -58,8 +60,10 @@ export const en = {
       "Use NVFBC capture on NVIDIA GPU: Off",
       "Enable hardware encoding: On",
       "Prioritize network traffic: On",
+      "Windows Settings > System > Display > HDR: Use HDR On, SDR content brightness 50",
+      "In-game HDR setting: maximum brightness 1000 nits",
     ],
-    clientHeading: "Client Settings",
+    clientHeading: "Recommended Client Settings",
     client: [
       "Client > Steam Settings > Remote Play > Advanced Client Options",
       "Enable Advanced Client Options: On",
@@ -73,6 +77,15 @@ export const en = {
       "PyroWave Video: On (YUV 4:4:4: Off, Automatic Bitrate: On, Quality Modifier: 1)",
       "Low Latency Networking: On",
       "Client > Steam Settings > Developer > HDR Compatibility Testing: On",
+      "StreamHDR plugin: Streaming Content Brightness 200 nits (default)",
+    ],
+    knownIssuesHeading: "Known Issues",
+    knownIssues: [
+      "On the built-in display of a handheld device, clipping may occur in the HDR peak luminance range. SteamOS is presumed to limit the maximum luminance of HDR content on the built-in display to about 600 nits (with the brightness slider at its maximum), and pixels brighter than this are shown as white. If a very bright area, such as the sun in the sky of a game, looks burnt out to white, you can reduce the problem by lowering the host game's maximum brightness to 800 nits or less, or by lowering Streaming Content Brightness.",
+      "This plugin automatically modifies Steam's system file streaming_client, and restores it, depending on conditions. If a serious error occurs, it can be hard for users to fix on their own, so please be careful.",
+      "If the host's \"Streaming display HDR\" option is set to \"Match Client\", the encoding falls back to SDR right after the stream starts. Always set the option to \"Default\" or \"Custom\".",
+      "If the host's \"Use NVFBC capture on NVIDIA GPU\" option is on, the captured data is not encoded in the HDR color gamut. Always turn this option off.",
+      "If a Steam update changes streaming_client, the plugin may stop working. If you can't update the plugin, disable or uninstall it and restart Steam to restore the original state.",
     ],
     detailsHeading: "Details",
     version: "Version",
