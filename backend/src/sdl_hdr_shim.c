@@ -38,7 +38,7 @@ bool SDL_GetBooleanProperty(SDL_PropertiesID properties, const char *name, bool 
 
 
 #define SDL_REFERENCE_WHITE_NITS 80.0f /* SDL counts white levels in units of 80 nits */
-#define PAPER_WHITE_DEFAULT_NITS 230.0f
+#define PAPER_WHITE_DEFAULT_NITS 200.0f
 #define PAPER_WHITE_MIN_NITS 80.0f
 #define PAPER_WHITE_MAX_NITS 480.0f
 

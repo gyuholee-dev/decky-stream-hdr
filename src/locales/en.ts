@@ -11,9 +11,8 @@ export const en = {
   hdrToggleLabel: "HDR Streaming",
   hdrToggleDescription:
     "Turns on HDR for both encoding and rendering when streaming with Steam. For the host and client settings, see Plugin Info.",
-  paperWhiteLabel: "Paper White",
-  paperWhiteDescription:
-    "Sets the reference brightness used when rendering HDR. If your display's peak brightness is 1000 nits, 230 nits is recommended.",
+  paperWhiteLabel: "Streaming Content Brightness",
+  paperWhiteDescription: "Sets the reference brightness of the streamed game screen.",
   contrastLabel: "Contrast",
   contrastDescription: "Adjusts the contrast of the HDR output. The default is recommended for OLED displays.",
   gammaLabel: "Gamma",
@@ -37,7 +36,7 @@ export const en = {
     usageHeading: "Usage",
     usage: [
       "Turn on HDR Streaming in the plugin menu, then start Remote Play. If a stream is already running, end it and start it again for the change to take effect.",
-      "Paper White sets the reference brightness of the HDR stream. To change it, end the stream first.",
+      "Streaming Content Brightness sets the reference brightness of the HDR stream. To change it, end the stream first.",
       "Contrast, Gamma and Saturation let you tune the HDR picture to your taste. You can change them freely, even while streaming.",
       "All plugin settings apply to Remote Play only. Games you install and run directly on the client device are not affected.",
     ],
@@ -81,7 +80,7 @@ export const en = {
     license: "License",
     repository: "Repository",
   },
-  streamingNotice: "Steam is currently streaming. HDR Streaming and Paper White can't be changed until the stream ends.",
+  streamingNotice: "Steam is currently streaming. HDR Streaming and Streaming Content Brightness can't be changed until the stream ends.",
   statusLoading: "Loading...",
   statusUnavailable: "Can't connect to the plugin. Please reload the plugin.",
   unknownError: "An unknown error occurred. Error code: {code}",

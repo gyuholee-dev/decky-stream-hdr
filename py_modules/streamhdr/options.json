@@ -1,6 +1,6 @@
 {
   "hdr_enabled": { "default": true, "frozenWhileStreaming": true },
-  "paper_white": { "min": 80, "max": 480, "step": 10, "default": 230, "frozenWhileStreaming": true },
+  "paper_white": { "min": 80, "max": 480, "step": 10, "default": 200, "frozenWhileStreaming": true },
   "contrast": { "min": 0, "max": 200, "step": 5, "default": 100, "neutral": 100 },
   "gamma": { "min": 50, "max": 200, "step": 5, "default": 100, "neutral": 100, "scale": 100 },
   "saturation": { "min": 0, "max": 200, "step": 5, "default": 100, "neutral": 100 }

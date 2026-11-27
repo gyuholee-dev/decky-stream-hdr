@@ -83,8 +83,8 @@ class OptionTests(WrapperTestCase):
     def test_default_is_written_at_start(self):
         controller = self.make()
         controller.start()
-        self.assertEqual(self.read_file(), "230")
-        self.assertEqual(controller.status()["paper_white"], 230)
+        self.assertEqual(self.read_file(), "200")
+        self.assertEqual(controller.status()["paper_white"], 200)
 
     def test_new_value_is_snapped_saved_and_written(self):
         controller = self.make()
@@ -159,9 +159,9 @@ class OptionTests(WrapperTestCase):
         status = controller.reset_settings()
         self.assertEqual(
             (status["hdr_enabled"], status["paper_white"], status["contrast"], status["gamma"], status["saturation"]),
-            (True, 230, 100, 100, 100),
+            (True, 200, 100, 100, 100),
         )
-        self.assertEqual(self.read_file(), "230")
+        self.assertEqual(self.read_file(), "200")
         self.assertTrue(status["wrapper"]["enabled"])
 
     def test_reset_while_streaming_takes_the_look_off(self):

@@ -1,11 +1,12 @@
 import type { LocaleStrings } from "./types";
 
 // 한국어. 플러그인 이름과 옵션 이름(StreamHDR, HDR Streaming, Saturation, Plugin Info, GitHub)은
-// 영어 그대로 두고, 설명문과 메시지만 번역한다. 읽는 사람은 일반 사용자이므로 개발 용어는 쓰지 않는다.
+// 영어 그대로 두고, 설명문과 메시지만 번역한다. 단 '스트리밍 콘텐츠 밝기'는 한국어 이름으로 표시한다. 읽는 사람은 일반 사용자이므로 개발 용어는 쓰지 않는다.
 // 여기에 없는 문구는 영어로 표시된다.
 export const ko: LocaleStrings = {
   hdrToggleDescription: "스팀 스트리밍 시 인코딩 및 렌더링에 HDR을 적용합니다. 호스트 및 클라이언트 설정은 Info를 확인하세요.",
-  paperWhiteDescription: "HDR 렌더링 시 기준 밝기를 조정합니다. 출력 디스플레이 피크 밝기가 1000일 경우 230 nits로 설정하길 권장합니다.",
+  paperWhiteLabel: "스트리밍 콘텐츠 밝기",
+  paperWhiteDescription: "스트리밍하는 게임 화면의 기준 밝기를 결정합니다.",
   contrastDescription: "HDR 출력의 대비를 조정합니다. OLED 디스플레이일 경우 기본값을 권장합니다.",
   gammaDescription: "HDR 출력의 감마를 조정합니다. OLED 디스플레이일 경우 0.85~1.00으로 설정하길 권장합니다.",
   saturationDescription: "HDR 출력의 채도를 조정합니다. OLED 디스플레이일 경우 125~135% 로 설정하길 권장합니다.",
@@ -21,7 +22,7 @@ export const ko: LocaleStrings = {
     usageHeading: "사용 방법",
     usage: [
       "플러그인 메뉴에서 HDR Streaming을 켠 뒤 Remote Play를 실행하십시오. 이미 실행 중이라면 스트리밍을 종료한 뒤 다시 실행해야 적용됩니다.",
-      "Paper White는 HDR 스트리밍이 어느 정도의 밝기로 출력될지 결정하는 기준값입니다. 이 값을 변경하고자 할 경우 스트리밍을 종료해 주십시오.",
+      "스트리밍 콘텐츠 밝기는 HDR 스트리밍이 어느 정도의 밝기로 출력될지 결정하는 기준값입니다. 이 값을 변경하고자 할 경우 스트리밍을 종료해 주십시오.",
       "Contrast, Gamma, Saturation은 HDR 출력 이미지를 사용자의 선호에 맞게 조정할 수 있는 설정입니다. 이 값들은 스트리밍 중에도 자유롭게 변경할 수 있습니다.",
       "플러그인의 모든 설정은 Remote Play에만 적용되며, 스트리밍을 실행하는 기기에 직접 설치하여 실행하는 게임에는 영향이 없습니다.",
     ],
@@ -65,7 +66,7 @@ export const ko: LocaleStrings = {
     license: "라이선스",
     repository: "저장소",
   },
-  streamingNotice: "스팀이 스트리밍 중입니다. 스트리밍 중에는 HDR 및 페이퍼 화이트 설정을 변경할 수 없습니다.",
+  streamingNotice: "스팀이 스트리밍 중입니다. 스트리밍 중에는 HDR 및 스트리밍 콘텐츠 밝기 설정을 변경할 수 없습니다.",
   statusLoading: "로드하는 중...",
   statusUnavailable: "플러그인에 연결할 수 없습니다. 플러그인을 다시 로드해 주십시오.",
   unknownError: "알 수 없는 오류가 발생했습니다. 오류 코드: {code}",
