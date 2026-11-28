@@ -79,8 +79,8 @@ Once the installation is complete, open StreamHDR from the Decky menu, turn on H
 
 ## Known Issues
 
-- On the built-in display of a handheld device, clipping may occur in the HDR peak luminance range. SteamOS is presumed to limit the maximum luminance of HDR content on the built-in display to about 600 nits (with the brightness slider at its maximum), and pixels brighter than this are shown as white. If a very bright area, such as the sun in the sky of a game, looks burnt out to white, you can reduce the problem by lowering the host game's maximum brightness to 800 nits or less, or by lowering Streaming Content Brightness.
 - This plugin automatically modifies Steam's system file `streaming_client`, and restores it, depending on conditions. If a serious error occurs, it can be hard for users to fix on their own, so please be careful.
+- On the built-in display of a handheld device, clipping may occur in the HDR peak luminance range. SteamOS is presumed to limit the maximum luminance of HDR content on the built-in display to about 600 nits (with the brightness slider at its maximum), and pixels brighter than this are shown as white. If a very bright area, such as the sun in the sky of a game, looks burnt out to white, you can reduce the problem by lowering the host game's maximum brightness to 800 nits or less, or by lowering Streaming Content Brightness.
 - If the host's "Streaming display HDR" option is set to "Match Client", the encoding falls back to SDR right after the stream starts. Always set the option to "Default" or "Custom".
 - If the host's "Use NVFBC capture on NVIDIA GPU" option is on, the captured data is not encoded in the HDR color gamut. Always turn this option off.
 - If a Steam update changes `streaming_client`, the plugin may stop working. If you can't update the plugin, disable or uninstall it and restart Steam to restore the original state.
