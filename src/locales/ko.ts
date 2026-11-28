@@ -4,7 +4,7 @@ import type { LocaleStrings } from "./types";
 // 영어 그대로 두고, 설명문과 메시지만 번역한다. 단 '스트리밍 콘텐츠 밝기'는 한국어 이름으로 표시한다. 읽는 사람은 일반 사용자이므로 개발 용어는 쓰지 않는다.
 // 여기에 없는 문구는 영어로 표시된다.
 export const ko: LocaleStrings = {
-  hdrToggleDescription: "Steam 스트리밍 시 인코딩 및 렌더링에 HDR을 적용합니다. 호스트 및 클라이언트 설정은 Info를 확인하세요.",
+  hdrToggleDescription: "Steam 스트리밍 시 인코딩 및 렌더링에 HDR을 적용합니다. 호스트 및 클라이언트 권장 설정은 Info를 확인하세요.",
   paperWhiteLabel: "스트리밍 콘텐츠 밝기",
   paperWhiteDescription: "스트리밍하는 게임 화면의 기준 밝기를 결정합니다.",
   contrastDescription: "HDR 출력의 대비를 조정합니다. OLED 디스플레이일 경우 기본값을 권장합니다.",

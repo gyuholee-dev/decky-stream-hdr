@@ -10,7 +10,7 @@ export const en = {
   pluginName: "StreamHDR",
   hdrToggleLabel: "HDR Streaming",
   hdrToggleDescription:
-    "Turns on HDR for both encoding and rendering when streaming with Steam. For the host and client settings, see Plugin Info.",
+    "Turns on HDR for both encoding and rendering when streaming with Steam. For the recommended host and client settings, see Plugin Info.",
   paperWhiteLabel: "Streaming Content Brightness",
   paperWhiteDescription: "Sets the reference brightness of the streamed game screen.",
   contrastLabel: "Contrast",
