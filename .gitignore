@@ -187,3 +187,6 @@ cli/
 # Release output
 release/
 
+
+# Screenshots taken on the test devices
+screenshots/
