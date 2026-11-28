@@ -33,24 +33,34 @@ export function OptionToggle({ status, change, label, description }: FieldContex
   );
 }
 
+// The slider prints the value as a plain number (1.1, 1.15, 1). The unit text that follows the number is used to pad it to a
+// fixed number of decimals, so that 1.10 and 1.00 are shown instead.
+function paddingZeros(shown: number, decimals: number): string {
+  const plain = String(shown);
+  const padded = shown.toFixed(decimals);
+  return padded.startsWith(plain) ? padded.slice(plain.length) : "";
+}
+
 export function OptionSlider({ name, suffix, status, change, label, description }: FieldContext & Texts & { name: SliderName; suffix?: string }) {
   const spec = options[name];
   const scale = spec.scale ?? 1; // gamma is stored in hundredths and shown as the plain number
+  const shown = status[name] / scale;
+  const decimals = Math.round(Math.log10(scale)); // gamma: 2 (1.00); the whole-number options: 0
   return (
     <PanelSectionRow>
       <SliderField
         label={label}
         description={<KeepAll>{description}</KeepAll>}
-        value={status[name] / scale}
+        value={shown}
         disabled={spec.frozenWhileStreaming && status.streaming}
         min={spec.min / scale}
         max={spec.max / scale}
         step={spec.step / scale}
         resetValue={spec.default / scale}
         showValue
-        valueSuffix={suffix}
-        onChange={(shown: number) => {
-          const stored = Math.round(shown * scale);
+        valueSuffix={decimals > 0 ? paddingZeros(shown, decimals) : suffix}
+        onChange={(next: number) => {
+          const stored = Math.round(next * scale);
           change({ [name]: stored }, setOption(name, stored));
         }}
       />
